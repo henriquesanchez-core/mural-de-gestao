@@ -255,10 +255,332 @@ const DASHBOARDS = [
     }
   },
 
+  // ── Carteira dos Estrategistas ────────────────────────────────────────────
+  {
+    id: 'carteira-estrategistas',
+    label: 'Carteira Estrategistas',
+    icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+             <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+             <line x1="3" y1="10" x2="21" y2="10"/>
+             <path d="M7 15h4"/>
+           </svg>`,
+
+    config: {
+      targetSheetName: 'Carteira dos Estrategistas',
+      statusHeaderHints: ['status', 'situação', 'situacao', 'estado', 'ativo', 'atividade'],
+      activeTerms: ['ativo', 'active', 'em carteira', 'vigente', 'em atendimento'],
+      inactiveTerms: ['inativo', 'inactive', 'pausado', 'encerrado', 'cancelado', 'desligado', 'arquivado'],
+    },
+
+    norm(value) {
+      return String(value ?? '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+    },
+
+    esc(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    },
+
+    looksLikeUrl(value) {
+      const text = String(value ?? '').trim();
+      if (!text) return false;
+      try {
+        const url = new URL(text);
+        return ['http:', 'https:'].includes(url.protocol);
+      } catch {
+        return false;
+      }
+    },
+
+    renderCell(value) {
+      const text = String(value ?? '').trim();
+      if (!text) return '—';
+      const safe = this.esc(text);
+      if (this.looksLikeUrl(text)) {
+        return `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>`;
+      }
+      return safe;
+    },
+
+    findSheetRecord() {
+      const sheets = window._sheets || [];
+      const target = this.norm(this.config.targetSheetName);
+
+      return (
+        sheets.find((sheet) => this.norm(sheet.name) === target) ||
+        sheets.find((sheet) => this.norm(sheet.name).includes(target)) ||
+        null
+      );
+    },
+
+    parseGoogleSheetsLink(link) {
+      try {
+        const url = new URL(link);
+        const idMatch = url.pathname.match(/\/spreadsheets\/d\/([A-Za-z0-9_-]+)/);
+        if (!idMatch) return null;
+
+        return {
+          sheetId: idMatch[1],
+          gid: url.searchParams.get('gid') || ''
+        };
+      } catch {
+        return null;
+      }
+    },
+
+    parseGvizJson(raw) {
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      if (start === -1 || end === -1 || end <= start) {
+        throw new Error('Resposta inválida da planilha.');
+      }
+      return JSON.parse(raw.slice(start, end + 1));
+    },
+
+    extractCellValue(cell) {
+      if (!cell) return '';
+      if (cell.f !== undefined && cell.f !== null && String(cell.f).trim() !== '') {
+        return String(cell.f);
+      }
+      if (cell.v === undefined || cell.v === null) return '';
+
+      if (typeof cell.v === 'string') {
+        const dateMatch = cell.v.match(/^Date\((\d+),(\d+),(\d+)\)$/);
+        if (dateMatch) {
+          const d = new Date(Number(dateMatch[1]), Number(dateMatch[2]), Number(dateMatch[3]));
+          return d.toLocaleDateString('pt-BR');
+        }
+      }
+
+      return String(cell.v);
+    },
+
+    async fetchSheetTable(link) {
+      const parsed = this.parseGoogleSheetsLink(link);
+      if (!parsed) {
+        throw new Error('O link da planilha não é um Google Sheets válido.');
+      }
+
+      const endpoint = new URL(`https://docs.google.com/spreadsheets/d/${parsed.sheetId}/gviz/tq`);
+      endpoint.searchParams.set('tqx', 'out:json');
+      if (parsed.gid) endpoint.searchParams.set('gid', parsed.gid);
+
+      const response = await fetch(endpoint.toString());
+      if (!response.ok) {
+        throw new Error('Não foi possível acessar a planilha (verifique permissões de compartilhamento).');
+      }
+
+      const raw = await response.text();
+      const json = this.parseGvizJson(raw);
+      const table = json.table || {};
+      const cols = table.cols || [];
+      const rawRows = table.rows || [];
+
+      const headers = cols.map((col, idx) => {
+        const label = String(col?.label || col?.id || '').trim();
+        return label || `Coluna ${idx + 1}`;
+      });
+
+      const rows = rawRows
+        .map((row) => headers.map((_, idx) => this.extractCellValue(row.c?.[idx])))
+        .filter((row) => row.some((cell) => String(cell).trim() !== ''));
+
+      return {
+        headers,
+        rows,
+        sheetId: parsed.sheetId,
+      };
+    },
+
+    getStatusBucket(statusValue, activeTerms, inactiveTerms) {
+      const normalized = this.norm(statusValue);
+      if (!normalized) return 'outros';
+
+      for (const term of inactiveTerms) {
+        if (normalized.includes(term)) return 'inativo';
+      }
+      for (const term of activeTerms) {
+        if (normalized.includes(term)) return 'ativo';
+      }
+      return 'outros';
+    },
+
+    detectStatusColumn(headers, rows, activeTerms, inactiveTerms) {
+      const hints = this.config.statusHeaderHints.map((term) => this.norm(term));
+
+      const directIdx = headers.findIndex((header) => {
+        const normalized = this.norm(header);
+        return hints.some((hint) => normalized.includes(hint));
+      });
+      if (directIdx >= 0) return directIdx;
+
+      let bestIdx = -1;
+      let bestScore = 0;
+
+      headers.forEach((_, colIdx) => {
+        let score = 0;
+        rows.forEach((row) => {
+          const bucket = this.getStatusBucket(row[colIdx], activeTerms, inactiveTerms);
+          if (bucket !== 'outros') score += 1;
+        });
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = colIdx;
+        }
+      });
+
+      return bestScore > 0 ? bestIdx : -1;
+    },
+
+    async render() {
+      const esc = (value) => this.esc(value);
+      const sheet = this.findSheetRecord();
+
+      if (!sheet) {
+        return `
+          <div class="dash-grid">
+            <div class="dash-card">
+              <div class="dash-card-header"><h3 class="dash-card-title">Carteira dos Estrategistas</h3></div>
+              <div class="dash-card-body">
+                <p class="dash-empty">
+                  Não encontrei uma planilha chamada <strong>Carteira dos Estrategistas</strong> no mural.
+                  Cadastre a planilha na aba <strong>Planilhas de Gestão</strong> para habilitar este dashboard.
+                </p>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      let tableData;
+      try {
+        tableData = await this.fetchSheetTable(sheet.link);
+      } catch (error) {
+        const message = error && error.message ? error.message : 'Falha ao carregar dados da planilha.';
+        return `
+          <div class="dash-grid">
+            <div class="dash-card">
+              <div class="dash-card-header"><h3 class="dash-card-title">Carteira dos Estrategistas</h3></div>
+              <div class="dash-card-body">
+                <p class="dash-empty">
+                  ${esc(message)}<br/>
+                  Confira o link cadastrado e se a planilha está compartilhada como leitura.
+                </p>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      const activeTerms = this.config.activeTerms.map((term) => this.norm(term));
+      const inactiveTerms = this.config.inactiveTerms.map((term) => this.norm(term));
+      const headers = tableData.headers;
+      const rows = tableData.rows;
+      const statusIdx = this.detectStatusColumn(headers, rows, activeTerms, inactiveTerms);
+
+      const registros = rows.map((row, index) => {
+        const statusRaw = statusIdx >= 0 ? row[statusIdx] : '';
+        const bucket = statusIdx >= 0
+          ? this.getStatusBucket(statusRaw, activeTerms, inactiveTerms)
+          : 'outros';
+        return { index, row, statusRaw, bucket };
+      });
+
+      const totais = {
+        total: registros.length,
+        ativos: registros.filter((item) => item.bucket === 'ativo').length,
+        inativos: registros.filter((item) => item.bucket === 'inativo').length,
+        outros: registros.filter((item) => item.bucket === 'outros').length,
+      };
+
+      const porStatus = new Map();
+      if (statusIdx >= 0) {
+        registros.forEach((item) => {
+          const label = String(item.statusRaw || 'Sem status').trim() || 'Sem status';
+          porStatus.set(label, (porStatus.get(label) || 0) + 1);
+        });
+      } else {
+        porStatus.set('Sem coluna de status identificada', registros.length);
+      }
+
+      const statusCloud = [...porStatus.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, count]) => `<span class="carteira-status-pill">${esc(label)} (${count})</span>`)
+        .join('');
+
+      const headHtml = headers.map((header) => `<th>${esc(header)}</th>`).join('');
+      const bodyHtml = registros.map((item) => `
+        <tr class="carteira-row" data-status="${item.bucket}">
+          ${item.row.map((cell) => `<td>${this.renderCell(cell)}</td>`).join('')}
+        </tr>
+      `).join('');
+
+      return `
+        <div class="dash-grid">
+          <div class="dash-kpi-row">
+            <div class="dash-kpi">
+              <div class="dash-kpi-label">Total de Registros</div>
+              <div class="dash-kpi-value">${totais.total}</div>
+              <div class="dash-kpi-sub">linhas válidas da planilha</div>
+            </div>
+            <div class="dash-kpi kpi-ativos">
+              <div class="dash-kpi-label">Ativos</div>
+              <div class="dash-kpi-value">${totais.ativos}</div>
+              <div class="dash-kpi-sub">carteira ativa</div>
+            </div>
+            <div class="dash-kpi kpi-inativos">
+              <div class="dash-kpi-label">Inativos</div>
+              <div class="dash-kpi-value">${totais.inativos}</div>
+              <div class="dash-kpi-sub">carteira inativa</div>
+            </div>
+            <div class="dash-kpi kpi-outros">
+              <div class="dash-kpi-label">Outros Status</div>
+              <div class="dash-kpi-value">${totais.outros}</div>
+              <div class="dash-kpi-sub">${statusIdx >= 0 ? `coluna: ${esc(headers[statusIdx])}` : 'status não identificado'}</div>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><h3 class="dash-card-title">Visão Macro da Carteira</h3></div>
+            <div class="dash-card-body" style="padding:16px 20px">
+              <div class="carteira-meta">Fonte: ${esc(sheet.name)} (ID: ${esc(tableData.sheetId)})</div>
+              <div class="carteira-status-cloud">${statusCloud}</div>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header">
+              <h3 class="dash-card-title">Base Completa da Carteira</h3>
+              <div class="carteira-filter-bar">
+                <button class="carteira-filter-btn active" data-f="all" onclick="_filtrarCarteiraStatus('all')">Todos (${totais.total})</button>
+                <button class="carteira-filter-btn" data-f="ativo" onclick="_filtrarCarteiraStatus('ativo')">Ativos (${totais.ativos})</button>
+                <button class="carteira-filter-btn" data-f="inativo" onclick="_filtrarCarteiraStatus('inativo')">Inativos (${totais.inativos})</button>
+                <button class="carteira-filter-btn" data-f="outros" onclick="_filtrarCarteiraStatus('outros')">Outros (${totais.outros})</button>
+              </div>
+            </div>
+            <div class="dash-card-body">
+              ${!registros.length ? '<p class="dash-empty">A planilha está sem dados para exibir.</p>' : `
+              <table class="dash-table">
+                <thead><tr>${headHtml}</tr></thead>
+                <tbody>${bodyHtml}</tbody>
+              </table>`}
+            </div>
+          </div>
+        </div>`;
+    }
+  },
+
   // ── Adicione novos dashboards abaixo ─────────────────────────────────────
   // { id: 'meu-dash', label: 'Meu Dashboard', icon: `<svg .../>`, render() { return `...`; } },
 
 ];
+
+window.DASHBOARDS = DASHBOARDS;
 
 // ── Filtro global da tabela de roteiros ───────────────────────────────────
 window._filtrarRoteiros = function(filtro) {
@@ -268,4 +590,14 @@ window._filtrarRoteiros = function(filtro) {
   document.querySelectorAll('.rot-row').forEach(row =>
     row.style.display = (filtro === 'all' || row.dataset.status === filtro) ? '' : 'none'
   );
+};
+
+// ── Filtro global da tabela da carteira ─────────────────────────────────────
+window._filtrarCarteiraStatus = function(filtro) {
+  document.querySelectorAll('.carteira-filter-btn').forEach((button) => {
+    button.classList.toggle('active', button.dataset.f === filtro);
+  });
+  document.querySelectorAll('.carteira-row').forEach((row) => {
+    row.style.display = (filtro === 'all' || row.dataset.status === filtro) ? '' : 'none';
+  });
 };

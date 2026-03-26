@@ -485,6 +485,9 @@ body {
 .kpi-proximos7 .dash-kpi-value { color: #d97706; }
 .kpi-pendente  .dash-kpi-value { color: #6b7280; }
 .kpi-entregue  .dash-kpi-value { color: #16a34a; }
+.kpi-ativos    .dash-kpi-value { color: #047857; }
+.kpi-inativos  .dash-kpi-value { color: #b91c1c; }
+.kpi-outros    .dash-kpi-value { color: #0f766e; }
 
 /* ── Por estrategista ── */
 .est-cards-grid {
@@ -536,6 +539,52 @@ body {
 }
 .rot-filter-btn:hover { background: var(--surface); color: var(--text); }
 .rot-filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── Carteira dos estrategistas ── */
+.carteira-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.carteira-status-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.carteira-status-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.carteira-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.carteira-filter-btn {
+  background: #f8fafc;
+  border: 1px solid #dbe2ea;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.carteira-filter-btn:hover { background: var(--surface); color: var(--text); }
+.carteira-filter-btn.active { background: #0f172a; color: #fff; border-color: #0f172a; }
 
 /* ── Banner mock ── */
 .dash-banner-mock {

@@ -99,7 +99,8 @@ async function renderDashboard(id, container) {
   try {
     container.innerHTML = await Promise.resolve(dash.render());
   } catch (e) {
-    container.innerHTML = `<div class="dash-error">Erro ao carregar dashboard: ${e.message}</div>`;
+    const errMsg = e && e.message ? e.message : 'Erro desconhecido';
+    container.innerHTML = `<div class="dash-error">Erro ao carregar dashboard: ${esc(errMsg)}</div>`;
   }
 }
 
