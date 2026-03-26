@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel de Gestão — Planilhas</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-title">
+        <span class="header-icon">📋</span>
+        <div>
+          <h1>Painel de Gestão</h1>
+          <p>Mural de Planilhas do Departamento</p>
+        </div>
+      </div>
+      <button class="btn-primary" id="btnOpenModal">+ Nova Planilha</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Buscar planilha..." />
+      </div>
+      <div class="count-badge" id="countBadge">0 planilhas</div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📂</div>
+      <h2>Nenhuma planilha cadastrada</h2>
+      <p>Clique em <strong>+ Nova Planilha</strong> para começar a organizar seu mural.</p>
+    </div>
+
+    <div class="cards-grid" id="cardsGrid"></div>
+
+  </main>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nova Planilha</h2>
+        <button class="btn-close" id="btnCloseModal" aria-label="Fechar">&times;</button>
+      </div>
+      <form id="sheetForm" class="modal-body" novalidate>
+        <input type="hidden" id="editId" />
+
+        <div class="form-group">
+          <label for="inputName">Nome da Planilha <span class="required">*</span></label>
+          <input type="text" id="inputName" placeholder="Ex: Controle de Escalas — UTI" maxlength="80" required />
+          <span class="field-error" id="errorName"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="inputLink">Link <span class="required">*</span></label>
+          <input type="url" id="inputLink" placeholder="https://docs.google.com/spreadsheets/..." required />
+          <span class="field-error" id="errorLink"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="inputCategory">Categoria</label>
+          <input type="text" id="inputCategory" placeholder="Ex: Escalas, Financeiro, RH…" maxlength="40" list="categorySuggestions" />
+          <datalist id="categorySuggestions"></datalist>
+        </div>
+
+        <div class="form-group">
+          <label for="inputDesc">Descrição (opcional)</label>
+          <textarea id="inputDesc" placeholder="Breve descrição do conteúdo ou propósito…" rows="3" maxlength="200"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btnCancel">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSave">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
