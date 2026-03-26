@@ -91,11 +91,16 @@ function initDashboards() {
   renderDashboard(activeDashId, content);
 }
 
-function renderDashboard(id, container) {
+async function renderDashboard(id, container) {
   const dash = window.DASHBOARDS.find(d => d.id === id);
   if (!dash) return;
-  window._sheets = sheets; // expose for dashboard access
-  container.innerHTML = dash.render();
+  window._sheets = sheets;
+  container.innerHTML = '<div class="dash-loading"><div class="dash-spinner"></div>Carregando dados…</div>';
+  try {
+    container.innerHTML = await Promise.resolve(dash.render());
+  } catch (e) {
+    container.innerHTML = `<div class="dash-error">Erro ao carregar dashboard: ${e.message}</div>`;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

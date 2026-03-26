@@ -464,6 +464,121 @@ body {
   font-size: 0.875rem;
 }
 
+/* ── Status badges ── */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.st-atrasado  { background: #fef2f2; color: #dc2626; }
+.st-hoje      { background: #eff6ff; color: #2563eb; }
+.st-proximos7 { background: #fffbeb; color: #d97706; }
+.st-pendente  { background: #f3f4f6; color: #6b7280; }
+.st-entregue  { background: #f0fdf4; color: #16a34a; }
+
+/* ── KPI color accents ── */
+.kpi-atrasado  .dash-kpi-value { color: #dc2626; }
+.kpi-hoje      .dash-kpi-value { color: #2563eb; }
+.kpi-proximos7 .dash-kpi-value { color: #d97706; }
+.kpi-pendente  .dash-kpi-value { color: #6b7280; }
+.kpi-entregue  .dash-kpi-value { color: #16a34a; }
+
+/* ── Por estrategista ── */
+.est-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.est-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.est-card-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.est-card-stats { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.est-stat {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+/* ── Filtros da tabela de roteiros ── */
+.rot-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rot-filter-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+  white-space: nowrap;
+}
+.rot-filter-btn:hover { background: var(--surface); color: var(--text); }
+.rot-filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── Banner mock ── */
+.dash-banner-mock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: #92400e;
+}
+.dash-banner-mock code { background: #fef3c7; border-radius: 4px; padding: 1px 5px; font-size: 0.78rem; }
+
+/* ── Loading / Error ── */
+.dash-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.dash-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.dash-error {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
 /* ── (reserved for future sections) ── */
 .cal-toolbar {
   display: flex;
