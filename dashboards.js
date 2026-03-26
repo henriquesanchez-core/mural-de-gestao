@@ -51,47 +51,23 @@ const DASHBOARDS = [
              <line x1="16" y1="17" x2="8" y2="17"/>
            </svg>`,
 
-    /**
-     * CONEXÃO COM GOOGLE SHEETS
-     * ─────────────────────────
-     * 1. Planilha → Arquivo → Compartilhar → "Qualquer pessoa com o link pode ver"
-     * 2. Copie o ID da URL: docs.google.com/spreadsheets/d/[SHEET_ID]/edit
-     * 3. Cole em sheetId abaixo
-     * 4. Liste os nomes exatos das abas em `abas`
-     *
-     * Deixe sheetId vazio para usar os dados de exemplo.
-     */
     config: {
       sheetId: '1NFx4lDqYh5dxejV-uZEFqjuVHGXHe7z3zfh5FV1h1n8',
-      abas: ['Ana Lima', 'Bruno Martins', 'Carla Souza', 'Diego Ferreira'],
-      colunas: { cliente: 0, roteiro: 1, prazo: 2, status: 3 },
+      abas: [
+        'Mariah ', 'Mª Carolina', 'Rafa Faria ', 'Rafael Nunes ', 'Pedro sz',
+        'Yuri', 'Jhay', 'Sergio', 'Joyce', 'Junior ', 'Lucas Grigorio',
+        'Joao', 'Juliano', 'Deivid', 'Davi', 'Madara teste', 'Amanda ',
+        'Felipe ', 'Leandro', 'Eduarda Barboza', 'Rodrigo de Paula',
+        'Pedro Barros', 'Lucas Nunes', 'Carol Nascimento', 'Rubens Sampaio',
+        'Elaine Emideo', 'Leonardo Bonassi',
+      ],
+      // Colunas: COPY=0, CLIENTE=1, PLANO=2, Mentor=3, LEVA ATUAL=4,
+      //          PRAZO ATUAL=5, LEVAS NO TOTAL=6, ROTEIROS POR LEVA=7, STATUS=8, ENTREGAS=9
+      colunas: { cliente: 1, plano: 2, levaAtual: 4, prazo: 5, totalLevas: 6, roteirosPorLeva: 7, status: 8 },
     },
 
-    mockData: [
-      { estrategista: 'Ana Lima',       cliente: 'Empresa ABC',      roteiro: 'Roteiro de Marca',       prazo: '2026-03-20', status: 'Atrasado' },
-      { estrategista: 'Ana Lima',       cliente: 'Empresa XYZ',      roteiro: 'Vídeo Institucional',    prazo: '2026-03-26', status: 'Pendente' },
-      { estrategista: 'Ana Lima',       cliente: 'Clínica Saúde+',   roteiro: 'Apresentação',           prazo: '2026-03-29', status: 'Pendente' },
-      { estrategista: 'Ana Lima',       cliente: 'Tech Start',       roteiro: 'Roteiro Explicativo',    prazo: '2026-04-10', status: 'Pendente' },
-      { estrategista: 'Ana Lima',       cliente: 'Moda Fest',        roteiro: 'Roteiro de Lançamento',  prazo: '2026-03-15', status: 'Entregue' },
-      { estrategista: 'Bruno Martins',  cliente: 'Restaurante Bom',  roteiro: 'Roteiro do Menu',        prazo: '2026-03-24', status: 'Atrasado' },
-      { estrategista: 'Bruno Martins',  cliente: 'Escola Elite',     roteiro: 'Aula Inaugural',         prazo: '2026-03-27', status: 'Pendente' },
-      { estrategista: 'Bruno Martins',  cliente: 'Hotel Sol',        roteiro: 'Tour Virtual',           prazo: '2026-04-01', status: 'Pendente' },
-      { estrategista: 'Bruno Martins',  cliente: 'Academia Fit',     roteiro: 'Campanha Verão',         prazo: '2026-03-10', status: 'Entregue' },
-      { estrategista: 'Bruno Martins',  cliente: 'Livraria Nova',    roteiro: 'Roteiro Promo',          prazo: '2026-03-22', status: 'Atrasado' },
-      { estrategista: 'Carla Souza',    cliente: 'Banco Digital',    roteiro: 'Roteiro do App',         prazo: '2026-03-26', status: 'Pendente' },
-      { estrategista: 'Carla Souza',    cliente: 'Startup Verde',    roteiro: 'Pitch Deck',             prazo: '2026-03-30', status: 'Pendente' },
-      { estrategista: 'Carla Souza',    cliente: 'ONG Vida',         roteiro: 'Roteiro de Doação',      prazo: '2026-03-18', status: 'Atrasado' },
-      { estrategista: 'Carla Souza',    cliente: 'Pharma Plus',      roteiro: 'Guia do Produto',        prazo: '2026-04-05', status: 'Pendente' },
-      { estrategista: 'Carla Souza',    cliente: 'E-commerce Fast',  roteiro: 'Roteiro de Ads',         prazo: '2026-03-12', status: 'Entregue' },
-      { estrategista: 'Diego Ferreira', cliente: 'Construtora Top',  roteiro: 'Roteiro de Lançamento',  prazo: '2026-03-25', status: 'Atrasado' },
-      { estrategista: 'Diego Ferreira', cliente: 'Seguro Certo',     roteiro: 'Explainer',              prazo: '2026-03-28', status: 'Pendente' },
-      { estrategista: 'Diego Ferreira', cliente: 'Telecom BR',       roteiro: 'Tutorial de Uso',        prazo: '2026-04-02', status: 'Pendente' },
-      { estrategista: 'Diego Ferreira', cliente: 'Farmácia Bem',     roteiro: 'Roteiro de Produtos',    prazo: '2026-03-08', status: 'Entregue' },
-      { estrategista: 'Diego Ferreira', cliente: 'Auto Shop',        roteiro: 'Promoção Especial',      prazo: '2026-04-08', status: 'Pendente' },
-    ],
-
     async fetchSheet(sheetId, aba) {
-      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(aba)}`;
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(aba)}`;
       const raw  = await fetch(url).then(r => r.text());
       const json = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
       const cols = this.config.colunas;
@@ -107,107 +83,104 @@ const DASHBOARDS = [
               : String(prazoCell.f || prazoCell.v);
           }
           return {
-            estrategista: aba,
-            cliente:  String(row.c[cols.cliente]?.v ?? ''),
-            roteiro:  String(row.c[cols.roteiro]?.v  ?? ''),
+            estrategista: aba.trim(),
+            cliente:         String(row.c[cols.cliente]?.v         ?? ''),
+            plano:           String(row.c[cols.plano]?.v           ?? ''),
+            levaAtual:             row.c[cols.levaAtual]?.v        ?? '',
+            totalLevas:            row.c[cols.totalLevas]?.v       ?? '',
+            roteirosPorLeva:       row.c[cols.roteirosPorLeva]?.v  ?? '',
             prazo,
-            status:   String(row.c[cols.status]?.v   ?? 'Pendente'),
+            status: String(row.c[cols.status]?.v ?? 'ATIVO'),
           };
         });
     },
 
     async render() {
-      let entregas = [];
-      let fonte = 'mock';
-
+      let clientes = [];
       if (this.config.sheetId) {
         const resultados = await Promise.all(
           this.config.abas.map(aba => this.fetchSheet(this.config.sheetId, aba))
         );
-        entregas = resultados.flat();
-        fonte = 'sheets';
-      } else {
-        entregas = this.mockData;
+        clientes = resultados.flat();
       }
 
       const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
       const em7  = new Date(hoje); em7.setDate(hoje.getDate() + 7);
-      const ENTREGUE = ['entregue','concluído','concluido','done','realizado','realizada'];
 
       function calcStatus(item) {
-        const s = (item.status || '').toLowerCase().trim();
-        if (ENTREGUE.includes(s))               return 'entregue';
-        if (s === 'atrasado')                   return 'atrasado';
-        if (!item.prazo)                        return 'pendente';
+        const s = (item.status || '').toUpperCase().trim();
+        if (s.includes('FINALIZADO'))               return 'finalizado';
+        if (s.includes('PAUSADO'))                  return 'pausado';
+        if (!item.prazo)                            return 'ativo';
         const p = new Date(item.prazo + 'T00:00:00');
-        if (p < hoje)                           return 'atrasado';
-        if (p.getTime() === hoje.getTime())     return 'hoje';
-        if (p <= em7)                           return 'proximos7';
-        return 'pendente';
+        if (p < hoje)                               return 'vencido';
+        if (p.getTime() === hoje.getTime())         return 'hoje';
+        if (p <= em7)                               return 'proximos7';
+        return 'ativo';
       }
 
-      const dados     = entregas.map(e => ({ ...e, _st: calcStatus(e) }));
-      const total     = dados.length;
-      const pendentes = dados.filter(e => e._st !== 'entregue').length;
-      const atrasadas = dados.filter(e => e._st === 'atrasado').length;
-      const paraHoje  = dados.filter(e => e._st === 'hoje').length;
-      const prox7     = dados.filter(e => e._st === 'proximos7').length;
-      const realizadas= dados.filter(e => e._st === 'entregue').length;
+      const dados      = clientes.map(e => ({ ...e, _st: calcStatus(e) }));
+      const total      = dados.length;
+      const vencidos   = dados.filter(e => e._st === 'vencido').length;
+      const paraHoje   = dados.filter(e => e._st === 'hoje').length;
+      const prox7      = dados.filter(e => e._st === 'proximos7').length;
+      const ativos     = dados.filter(e => !['finalizado','pausado'].includes(e._st)).length;
+      const pausados   = dados.filter(e => e._st === 'pausado').length;
+      const finalizados= dados.filter(e => e._st === 'finalizado').length;
 
       const porEst = {};
       dados.forEach(e => {
-        if (!porEst[e.estrategista]) porEst[e.estrategista] = { atrasado:0, hoje:0, proximos7:0, pendente:0, entregue:0 };
+        if (!porEst[e.estrategista]) porEst[e.estrategista] = { vencido:0, hoje:0, proximos7:0, ativo:0, pausado:0, finalizado:0 };
         porEst[e.estrategista][e._st]++;
       });
 
       const esc  = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       const fmtD = ymd => { if (!ymd) return '—'; const [y,m,d] = ymd.split('-'); return `${d}/${m}/${y}`; };
-      const LABEL = { atrasado:'Atrasado', hoje:'Hoje', proximos7:'Próx. 7 dias', pendente:'Pendente', entregue:'Entregue' };
+      const LABEL = { vencido:'Vencido', hoje:'Hoje', proximos7:'Próx. 7 dias', ativo:'Ativo', pausado:'Pausado', finalizado:'Finalizado' };
+      const CSS   = { vencido:'st-atrasado', hoje:'st-hoje', proximos7:'st-proximos7', ativo:'st-pendente', pausado:'st-pendente', finalizado:'st-entregue' };
 
       const rows = dados
-        .sort((a,b) => (a.prazo||'') > (b.prazo||'') ? 1 : -1)
+        .sort((a,b) => {
+          if (!a.prazo && !b.prazo) return 0;
+          if (!a.prazo) return 1;
+          if (!b.prazo) return -1;
+          return a.prazo > b.prazo ? 1 : -1;
+        })
         .map(e => `
           <tr class="rot-row" data-status="${e._st}">
             <td>${esc(e.estrategista)}</td>
             <td>${esc(e.cliente)}</td>
-            <td>${esc(e.roteiro)}</td>
+            <td>${esc(e.plano)}</td>
+            <td style="white-space:nowrap">${e.levaAtual !== '' ? `${e.levaAtual}${e.totalLevas !== '' ? `/${e.totalLevas}` : ''}` : '—'}</td>
             <td style="white-space:nowrap">${fmtD(e.prazo)}</td>
-            <td><span class="status-badge st-${e._st}">${LABEL[e._st]}</span></td>
+            <td><span class="status-badge ${CSS[e._st]}">${LABEL[e._st]}</span></td>
           </tr>`).join('');
 
-      const estCards = Object.entries(porEst).map(([nome, c]) => `
-        <div class="est-card">
-          <div class="est-card-name">${esc(nome)}</div>
-          <div class="est-card-stats">
-            ${c.atrasado  ? `<span class="est-stat st-atrasado">${c.atrasado} atrasada${c.atrasado>1?'s':''}</span>`   : ''}
-            ${c.hoje      ? `<span class="est-stat st-hoje">${c.hoje} hoje</span>`                                       : ''}
-            ${c.proximos7 ? `<span class="est-stat st-proximos7">${c.proximos7} em 7 dias</span>`                       : ''}
-            ${c.pendente  ? `<span class="est-stat st-pendente">${c.pendente} pendente${c.pendente>1?'s':''}</span>`   : ''}
-            ${c.entregue  ? `<span class="est-stat st-entregue">${c.entregue} entregue${c.entregue>1?'s':''}</span>`   : ''}
-          </div>
-        </div>`).join('');
+      const estCards = Object.entries(porEst)
+        .sort((a,b) => (b[1].vencido + b[1].hoje) - (a[1].vencido + a[1].hoje))
+        .map(([nome, c]) => `
+          <div class="est-card">
+            <div class="est-card-name">${esc(nome)}</div>
+            <div class="est-card-stats">
+              ${c.vencido   ? `<span class="est-stat st-atrasado">${c.vencido} vencido${c.vencido>1?'s':''}</span>`      : ''}
+              ${c.hoje      ? `<span class="est-stat st-hoje">${c.hoje} hoje</span>`                                      : ''}
+              ${c.proximos7 ? `<span class="est-stat st-proximos7">${c.proximos7} em 7 dias</span>`                      : ''}
+              ${c.ativo     ? `<span class="est-stat st-pendente">${c.ativo} ativo${c.ativo>1?'s':''}</span>`            : ''}
+              ${c.pausado   ? `<span class="est-stat st-pendente">${c.pausado} pausado${c.pausado>1?'s':''}</span>`      : ''}
+              ${c.finalizado? `<span class="est-stat st-entregue">${c.finalizado} finalizado${c.finalizado>1?'s':''}</span>` : ''}
+            </div>
+          </div>`).join('');
 
       return `
         <div class="dash-grid">
-          ${fonte === 'mock' ? `
-          <div class="dash-banner-mock">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Exibindo <strong>dados de exemplo</strong>. Para conectar sua planilha, preencha <code>config.sheetId</code> em <code>dashboards.js</code>.
-          </div>` : ''}
-
           <div class="dash-kpi-row">
-            <div class="dash-kpi kpi-pendente">
-              <div class="dash-kpi-label">Pendentes</div>
-              <div class="dash-kpi-value">${pendentes}</div>
-              <div class="dash-kpi-sub">de ${total} no total</div>
-            </div>
             <div class="dash-kpi kpi-atrasado">
-              <div class="dash-kpi-label">Atrasadas</div>
-              <div class="dash-kpi-value">${atrasadas}</div>
-              <div class="dash-kpi-sub">prazo vencido</div>
+              <div class="dash-kpi-label">Vencidos</div>
+              <div class="dash-kpi-value">${vencidos}</div>
+              <div class="dash-kpi-sub">prazo ultrapassado</div>
             </div>
             <div class="dash-kpi kpi-hoje">
-              <div class="dash-kpi-label">Para hoje</div>
+              <div class="dash-kpi-label">Para Hoje</div>
               <div class="dash-kpi-value">${paraHoje}</div>
               <div class="dash-kpi-sub">vencem hoje</div>
             </div>
@@ -216,39 +189,46 @@ const DASHBOARDS = [
               <div class="dash-kpi-value">${prox7}</div>
               <div class="dash-kpi-sub">vencem em breve</div>
             </div>
+            <div class="dash-kpi">
+              <div class="dash-kpi-label">Ativos</div>
+              <div class="dash-kpi-value">${ativos}</div>
+              <div class="dash-kpi-sub">de ${total} clientes</div>
+            </div>
             <div class="dash-kpi kpi-entregue">
-              <div class="dash-kpi-label">Realizadas</div>
-              <div class="dash-kpi-value">${realizadas}</div>
-              <div class="dash-kpi-sub">entregas concluídas</div>
+              <div class="dash-kpi-label">Finalizados</div>
+              <div class="dash-kpi-value">${finalizados}</div>
+              <div class="dash-kpi-sub">${pausados} pausados</div>
             </div>
           </div>
 
           <div class="dash-card">
-            <div class="dash-card-header"><h3 class="dash-card-title">Por Estrategista</h3></div>
+            <div class="dash-card-header"><h3 class="dash-card-title">Por Copy</h3></div>
             <div class="dash-card-body" style="padding:16px 20px">
-              <div class="est-cards-grid">${estCards}</div>
+              <div class="est-cards-grid">${estCards || '<p class="dash-empty">Nenhum dado carregado.</p>'}</div>
             </div>
           </div>
 
           <div class="dash-card">
             <div class="dash-card-header">
-              <h3 class="dash-card-title">Todas as Entregas</h3>
+              <h3 class="dash-card-title">Todos os Clientes</h3>
               <div class="rot-filters">
-                <button class="rot-filter-btn active" data-f="all"       onclick="_filtrarRoteiros('all')">Todos (${total})</button>
-                <button class="rot-filter-btn"        data-f="atrasado"  onclick="_filtrarRoteiros('atrasado')">Atrasadas (${atrasadas})</button>
-                <button class="rot-filter-btn"        data-f="hoje"      onclick="_filtrarRoteiros('hoje')">Hoje (${paraHoje})</button>
-                <button class="rot-filter-btn"        data-f="proximos7" onclick="_filtrarRoteiros('proximos7')">Próx. 7 dias (${prox7})</button>
-                <button class="rot-filter-btn"        data-f="pendente"  onclick="_filtrarRoteiros('pendente')">Pendentes</button>
-                <button class="rot-filter-btn"        data-f="entregue"  onclick="_filtrarRoteiros('entregue')">Entregues (${realizadas})</button>
+                <button class="rot-filter-btn active" data-f="all"        onclick="_filtrarRoteiros('all')">Todos (${total})</button>
+                <button class="rot-filter-btn"        data-f="vencido"    onclick="_filtrarRoteiros('vencido')">Vencidos (${vencidos})</button>
+                <button class="rot-filter-btn"        data-f="hoje"       onclick="_filtrarRoteiros('hoje')">Hoje (${paraHoje})</button>
+                <button class="rot-filter-btn"        data-f="proximos7"  onclick="_filtrarRoteiros('proximos7')">Próx. 7 dias (${prox7})</button>
+                <button class="rot-filter-btn"        data-f="ativo"      onclick="_filtrarRoteiros('ativo')">Ativos (${ativos})</button>
+                <button class="rot-filter-btn"        data-f="pausado"    onclick="_filtrarRoteiros('pausado')">Pausados (${pausados})</button>
+                <button class="rot-filter-btn"        data-f="finalizado" onclick="_filtrarRoteiros('finalizado')">Finalizados (${finalizados})</button>
               </div>
             </div>
             <div class="dash-card-body">
+              ${!dados.length ? '<p class="dash-empty">Nenhum dado carregado.</p>' : `
               <table class="dash-table">
                 <thead>
-                  <tr><th>Estrategista</th><th>Cliente</th><th>Roteiro</th><th>Prazo</th><th>Status</th></tr>
+                  <tr><th>Copy</th><th>Cliente</th><th>Plano</th><th>Leva</th><th>Prazo</th><th>Status</th></tr>
                 </thead>
                 <tbody>${rows}</tbody>
-              </table>
+              </table>`}
             </div>
           </div>
         </div>`;
