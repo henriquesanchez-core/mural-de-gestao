@@ -267,7 +267,7 @@ const DASHBOARDS = [
 
     config: {
       targetSheetName: 'Carteira dos Estrategistas',
-      targetTabs: ['Carteira dos mentores', 'Carteira dos copys'],
+      targetTabs: ['Carteira Mentores', 'Carteira Copys'],
       statusHeaderHints: ['status', 'situação', 'situacao', 'estado', 'ativo', 'atividade'],
       activeTerms: ['ativo', 'active', 'em carteira', 'vigente', 'em atendimento'],
       inactiveTerms: ['inativo', 'inactive', 'pausado', 'encerrado', 'cancelado', 'desligado', 'arquivado'],
