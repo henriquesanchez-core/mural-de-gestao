@@ -58,19 +58,26 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // ─────────────────────────────────────────────────────────────────────────────
 let activeDashId = null;
 
+function getDashboardsRegistry() {
+  if (Array.isArray(window.DASHBOARDS) && window.DASHBOARDS.length) return window.DASHBOARDS;
+  if (typeof DASHBOARDS !== 'undefined' && Array.isArray(DASHBOARDS) && DASHBOARDS.length) return DASHBOARDS;
+  return [];
+}
+
 function initDashboards() {
   const subnav  = document.getElementById('dashSubnav');
   const content = document.getElementById('dashContent');
+  const dashboards = getDashboardsRegistry();
 
-  if (!Array.isArray(window.DASHBOARDS) || !window.DASHBOARDS.length) {
+  if (!dashboards.length) {
     subnav.innerHTML  = '<span class="dash-subnav-empty">Nenhum dashboard registrado em dashboards.js</span>';
     content.innerHTML = '';
     return;
   }
 
   // Build sub-nav buttons
-  subnav.innerHTML = window.DASHBOARDS.map(d => `
-    <button class="dash-nav-btn${activeDashId === d.id || (!activeDashId && d === window.DASHBOARDS[0]) ? ' active' : ''}"
+  subnav.innerHTML = dashboards.map(d => `
+    <button class="dash-nav-btn${activeDashId === d.id || (!activeDashId && d === dashboards[0]) ? ' active' : ''}"
             data-dash="${d.id}">
       ${d.icon || ''}
       ${d.label}
@@ -87,12 +94,13 @@ function initDashboards() {
   });
 
   // Render first (or previously active) dashboard
-  if (!activeDashId) activeDashId = window.DASHBOARDS[0].id;
+  if (!activeDashId) activeDashId = dashboards[0].id;
   renderDashboard(activeDashId, content);
 }
 
 async function renderDashboard(id, container) {
-  const dash = window.DASHBOARDS.find(d => d.id === id);
+  const dashboards = getDashboardsRegistry();
+  const dash = dashboards.find(d => d.id === id);
   if (!dash) return;
   window._sheets = sheets;
   container.innerHTML = '<div class="dash-loading"><div class="dash-spinner"></div>Carregando dados…</div>';
