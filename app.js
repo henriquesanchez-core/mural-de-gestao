@@ -49,8 +49,54 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+    if (btn.dataset.tab === 'dashboards') initDashboards();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dashboards
+// ─────────────────────────────────────────────────────────────────────────────
+let activeDashId = null;
+
+function initDashboards() {
+  const subnav  = document.getElementById('dashSubnav');
+  const content = document.getElementById('dashContent');
+
+  if (!Array.isArray(window.DASHBOARDS) || !window.DASHBOARDS.length) {
+    subnav.innerHTML  = '<span class="dash-subnav-empty">Nenhum dashboard registrado em dashboards.js</span>';
+    content.innerHTML = '';
+    return;
+  }
+
+  // Build sub-nav buttons
+  subnav.innerHTML = window.DASHBOARDS.map(d => `
+    <button class="dash-nav-btn${activeDashId === d.id || (!activeDashId && d === window.DASHBOARDS[0]) ? ' active' : ''}"
+            data-dash="${d.id}">
+      ${d.icon || ''}
+      ${d.label}
+    </button>
+  `).join('');
+
+  subnav.querySelectorAll('.dash-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      subnav.querySelectorAll('.dash-nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeDashId = btn.dataset.dash;
+      renderDashboard(activeDashId, content);
+    });
+  });
+
+  // Render first (or previously active) dashboard
+  if (!activeDashId) activeDashId = window.DASHBOARDS[0].id;
+  renderDashboard(activeDashId, content);
+}
+
+function renderDashboard(id, container) {
+  const dash = window.DASHBOARDS.find(d => d.id === id);
+  if (!dash) return;
+  window._sheets = sheets; // expose for dashboard access
+  container.innerHTML = dash.render();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sheets — render

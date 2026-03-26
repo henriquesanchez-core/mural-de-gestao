@@ -57,12 +57,9 @@
 
   <!-- ── ABA: Dashboards ── -->
   <div class="tab-content" id="tab-dashboards">
+    <nav class="dash-subnav" id="dashSubnav"></nav>
     <div class="main">
-      <div class="empty-state visible">
-        <div class="empty-icon">📊</div>
-        <h2>Nenhum dashboard cadastrado</h2>
-        <p>Em breve você poderá adicionar seus dashboards aqui.</p>
-      </div>
+      <div id="dashContent"></div>
     </div>
   </div>
 
@@ -176,6 +173,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="dashboards.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
