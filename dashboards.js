@@ -247,6 +247,7 @@ const DASHBOARDS = [
 
     config: {
       targetSheetName: 'Carteira dos Estrategistas',
+      targetTabs: ['Carteira dos mentores', 'Carteira dos copys'],
       statusHeaderHints: ['status', 'situação', 'situacao', 'estado', 'ativo', 'atividade'],
       activeTerms: ['ativo', 'active', 'em carteira', 'vigente', 'em atendimento'],
       inactiveTerms: ['inativo', 'inactive', 'pausado', 'encerrado', 'cancelado', 'desligado', 'arquivado'],
@@ -307,8 +308,7 @@ const DASHBOARDS = [
         if (!idMatch) return null;
 
         return {
-          sheetId: idMatch[1],
-          gid: url.searchParams.get('gid') || ''
+          sheetId: idMatch[1]
         };
       } catch {
         return null;
@@ -342,19 +342,14 @@ const DASHBOARDS = [
       return String(cell.v);
     },
 
-    async fetchSheetTable(link) {
-      const parsed = this.parseGoogleSheetsLink(link);
-      if (!parsed) {
-        throw new Error('O link da planilha não é um Google Sheets válido.');
-      }
-
-      const endpoint = new URL(`https://docs.google.com/spreadsheets/d/${parsed.sheetId}/gviz/tq`);
+    async fetchSheetTab(sheetId, tabName) {
+      const endpoint = new URL(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq`);
       endpoint.searchParams.set('tqx', 'out:json');
-      if (parsed.gid) endpoint.searchParams.set('gid', parsed.gid);
+      endpoint.searchParams.set('sheet', tabName);
 
       const response = await fetch(endpoint.toString());
       if (!response.ok) {
-        throw new Error('Não foi possível acessar a planilha (verifique permissões de compartilhamento).');
+        throw new Error(`Não foi possível acessar a aba "${tabName}".`);
       }
 
       const raw = await response.text();
@@ -373,9 +368,60 @@ const DASHBOARDS = [
         .filter((row) => row.some((cell) => String(cell).trim() !== ''));
 
       return {
+        tabName,
         headers,
         rows,
+      };
+    },
+
+    mergeTabTables(tabTables) {
+      const headerSet = new Set();
+      tabTables.forEach((table) => {
+        table.headers.forEach((header) => headerSet.add(header));
+      });
+
+      const unifiedHeaders = ['Aba', ...Array.from(headerSet)];
+      const rows = tabTables.flatMap((table) => {
+        return table.rows.map((row) => {
+          const rowByHeader = new Map();
+          table.headers.forEach((header, index) => {
+            rowByHeader.set(header, row[index] ?? '');
+          });
+
+          return unifiedHeaders.map((header) => {
+            if (header === 'Aba') return table.tabName;
+            return rowByHeader.get(header) ?? '';
+          });
+        });
+      });
+
+      return {
+        headers: unifiedHeaders,
+        rows,
+        tabsLoaded: tabTables.map((table) => table.tabName),
+      };
+    },
+
+    async fetchSheetTable(link) {
+      const parsed = this.parseGoogleSheetsLink(link);
+      if (!parsed) {
+        throw new Error('O link da planilha não é um Google Sheets válido.');
+      }
+
+      const targetTabs = (this.config.targetTabs || []).filter(Boolean);
+      if (!targetTabs.length) {
+        throw new Error('Nenhuma aba configurada para leitura da carteira.');
+      }
+
+      const tabTables = [];
+      for (const tabName of targetTabs) {
+        tabTables.push(await this.fetchSheetTab(parsed.sheetId, tabName));
+      }
+
+      const merged = this.mergeTabTables(tabTables);
+      return {
         sheetId: parsed.sheetId,
+        ...merged,
       };
     },
 
@@ -450,7 +496,7 @@ const DASHBOARDS = [
               <div class="dash-card-body">
                 <p class="dash-empty">
                   ${esc(message)}<br/>
-                  Confira o link cadastrado e se a planilha está compartilhada como leitura.
+                  Confira o link cadastrado, o compartilhamento de leitura e os nomes das abas configuradas.
                 </p>
               </div>
             </div>
@@ -529,6 +575,7 @@ const DASHBOARDS = [
             <div class="dash-card-header"><h3 class="dash-card-title">Visão Macro da Carteira</h3></div>
             <div class="dash-card-body" style="padding:16px 20px">
               <div class="carteira-meta">Fonte: ${esc(sheet.name)} (ID: ${esc(tableData.sheetId)})</div>
+              <div class="carteira-meta">Abas: ${(tableData.tabsLoaded || []).map((tab) => esc(tab)).join(' | ')}</div>
               <div class="carteira-status-cloud">${statusCloud}</div>
             </div>
           </div>
