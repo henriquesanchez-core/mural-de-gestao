@@ -128,11 +128,7 @@ const DASHBOARDS = [
       const pausados   = dados.filter(e => e._st === 'pausado').length;
       const finalizados= dados.filter(e => e._st === 'finalizado').length;
 
-      const porEst = {};
-      dados.forEach(e => {
-        if (!porEst[e.estrategista]) porEst[e.estrategista] = { vencido:0, hoje:0, proximos7:0, ativo:0, pausado:0, finalizado:0 };
-        porEst[e.estrategista][e._st]++;
-      });
+      const copies = [...new Set(dados.map(e => e.estrategista))].sort();
 
       const esc  = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       const fmtD = ymd => { if (!ymd) return '—'; const [y,m,d] = ymd.split('-'); return `${d}/${m}/${y}`; };
@@ -147,7 +143,7 @@ const DASHBOARDS = [
           return a.prazo > b.prazo ? 1 : -1;
         })
         .map(e => `
-          <tr class="rot-row" data-status="${e._st}">
+          <tr class="rot-row" data-status="${e._st}" data-copy="${esc(e.estrategista)}">
             <td>${esc(e.estrategista)}</td>
             <td>${esc(e.cliente)}</td>
             <td>${esc(e.plano)}</td>
@@ -156,20 +152,11 @@ const DASHBOARDS = [
             <td><span class="status-badge ${CSS[e._st]}">${LABEL[e._st]}</span></td>
           </tr>`).join('');
 
-      const estCards = Object.entries(porEst)
-        .sort((a,b) => (b[1].vencido + b[1].hoje) - (a[1].vencido + a[1].hoje))
-        .map(([nome, c]) => `
-          <div class="est-card">
-            <div class="est-card-name">${esc(nome)}</div>
-            <div class="est-card-stats">
-              ${c.vencido   ? `<span class="est-stat st-atrasado">${c.vencido} vencido${c.vencido>1?'s':''}</span>`      : ''}
-              ${c.hoje      ? `<span class="est-stat st-hoje">${c.hoje} hoje</span>`                                      : ''}
-              ${c.proximos7 ? `<span class="est-stat st-proximos7">${c.proximos7} em 7 dias</span>`                      : ''}
-              ${c.ativo     ? `<span class="est-stat st-pendente">${c.ativo} ativo${c.ativo>1?'s':''}</span>`            : ''}
-              ${c.pausado   ? `<span class="est-stat st-pendente">${c.pausado} pausado${c.pausado>1?'s':''}</span>`      : ''}
-              ${c.finalizado? `<span class="est-stat st-entregue">${c.finalizado} finalizado${c.finalizado>1?'s':''}</span>` : ''}
-            </div>
-          </div>`).join('');
+      const copyOptions = copies.map(n => `
+        <label class="rot-copy-option">
+          <input type="checkbox" value="${esc(n)}" checked onchange="window._applyCopyFilter()">
+          ${esc(n)}
+        </label>`).join('');
 
       return `
         <div class="dash-grid">
@@ -202,23 +189,31 @@ const DASHBOARDS = [
           </div>
 
           <div class="dash-card">
-            <div class="dash-card-header"><h3 class="dash-card-title">Por Copy</h3></div>
-            <div class="dash-card-body" style="padding:16px 20px">
-              <div class="est-cards-grid">${estCards || '<p class="dash-empty">Nenhum dado carregado.</p>'}</div>
-            </div>
-          </div>
-
-          <div class="dash-card">
             <div class="dash-card-header">
               <h3 class="dash-card-title">Todos os Clientes</h3>
-              <div class="rot-filters">
-                <button class="rot-filter-btn active" data-f="all"        onclick="_filtrarRoteiros('all')">Todos (${total})</button>
-                <button class="rot-filter-btn"        data-f="vencido"    onclick="_filtrarRoteiros('vencido')">Vencidos (${vencidos})</button>
-                <button class="rot-filter-btn"        data-f="hoje"       onclick="_filtrarRoteiros('hoje')">Hoje (${paraHoje})</button>
-                <button class="rot-filter-btn"        data-f="proximos7"  onclick="_filtrarRoteiros('proximos7')">Próx. 7 dias (${prox7})</button>
-                <button class="rot-filter-btn"        data-f="ativo"      onclick="_filtrarRoteiros('ativo')">Ativos (${ativos})</button>
-                <button class="rot-filter-btn"        data-f="pausado"    onclick="_filtrarRoteiros('pausado')">Pausados (${pausados})</button>
-                <button class="rot-filter-btn"        data-f="finalizado" onclick="_filtrarRoteiros('finalizado')">Finalizados (${finalizados})</button>
+              <div class="rot-toolbar">
+                <div class="rot-copy-select" id="rot-copy-select">
+                  <button class="rot-copy-trigger" onclick="window._toggleCopyDropdown(event)">
+                    <span id="rot-copy-summary">Todos os copies</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div class="rot-copy-dropdown" id="rot-copy-dropdown">
+                    <div class="rot-copy-actions">
+                      <button onclick="window._selectAllCopies(true)">Selecionar todos</button>
+                      <button onclick="window._selectAllCopies(false)">Limpar</button>
+                    </div>
+                    <div class="rot-copy-options">${copyOptions}</div>
+                  </div>
+                </div>
+                <div class="rot-filters">
+                  <button class="rot-filter-btn active" data-f="all"        onclick="_filtrarRoteiros('all')">Todos (${total})</button>
+                  <button class="rot-filter-btn"        data-f="vencido"    onclick="_filtrarRoteiros('vencido')">Vencidos (${vencidos})</button>
+                  <button class="rot-filter-btn"        data-f="hoje"       onclick="_filtrarRoteiros('hoje')">Hoje (${paraHoje})</button>
+                  <button class="rot-filter-btn"        data-f="proximos7"  onclick="_filtrarRoteiros('proximos7')">Próx. 7 dias (${prox7})</button>
+                  <button class="rot-filter-btn"        data-f="ativo"      onclick="_filtrarRoteiros('ativo')">Ativos (${ativos})</button>
+                  <button class="rot-filter-btn"        data-f="pausado"    onclick="_filtrarRoteiros('pausado')">Pausados (${pausados})</button>
+                  <button class="rot-filter-btn"        data-f="finalizado" onclick="_filtrarRoteiros('finalizado')">Finalizados (${finalizados})</button>
+                </div>
               </div>
             </div>
             <div class="dash-card-body">
@@ -374,6 +369,13 @@ const DASHBOARDS = [
       };
     },
 
+    resolveTabKey(tabName) {
+      const normalized = this.norm(tabName);
+      if (normalized.includes('mentor')) return 'mentors';
+      if (normalized.includes('copy')) return 'copies';
+      return 'others';
+    },
+
     mergeTabTables(tabTables) {
       const headerSet = new Set();
       tabTables.forEach((table) => {
@@ -465,6 +467,23 @@ const DASHBOARDS = [
       return bestScore > 0 ? bestIdx : -1;
     },
 
+    isInvalidMergedRow(row, statusIdx) {
+      const contentCells = row.slice(1).map((cell) => String(cell ?? '').trim());
+      const filled = contentCells.filter((cell) => cell && cell !== '—' && cell !== '-');
+
+      if (filled.length < 2) return true;
+      if (!filled.some((cell) => /[A-Za-zÀ-ÿ0-9]/.test(cell))) return true;
+
+      if (statusIdx >= 0) {
+        const statusValue = this.norm(row[statusIdx]);
+        if (['invalido', 'invalida', 'invalid', 'desconsiderar', 'desconsiderado'].includes(statusValue)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+
     async render() {
       const esc = (value) => this.esc(value);
       const sheet = this.findSheetRecord();
@@ -508,13 +527,16 @@ const DASHBOARDS = [
       const headers = tableData.headers;
       const rows = tableData.rows;
       const statusIdx = this.detectStatusColumn(headers, rows, activeTerms, inactiveTerms);
+      const validRows = rows.filter((row) => !this.isInvalidMergedRow(row, statusIdx));
 
-      const registros = rows.map((row, index) => {
+      const registros = validRows.map((row, index) => {
         const statusRaw = statusIdx >= 0 ? row[statusIdx] : '';
+        const tabLabel = String(row[0] || '').trim();
+        const tabKey = this.resolveTabKey(tabLabel);
         const bucket = statusIdx >= 0
           ? this.getStatusBucket(statusRaw, activeTerms, inactiveTerms)
           : 'outros';
-        return { index, row, statusRaw, bucket };
+        return { index, row, statusRaw, bucket, tabKey, tabLabel };
       });
 
       const totais = {
@@ -524,24 +546,14 @@ const DASHBOARDS = [
         outros: registros.filter((item) => item.bucket === 'outros').length,
       };
 
-      const porStatus = new Map();
-      if (statusIdx >= 0) {
-        registros.forEach((item) => {
-          const label = String(item.statusRaw || 'Sem status').trim() || 'Sem status';
-          porStatus.set(label, (porStatus.get(label) || 0) + 1);
-        });
-      } else {
-        porStatus.set('Sem coluna de status identificada', registros.length);
-      }
-
-      const statusCloud = [...porStatus.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .map(([label, count]) => `<span class="carteira-status-pill">${esc(label)} (${count})</span>`)
-        .join('');
+      const tabTotals = {
+        mentors: registros.filter((item) => item.tabKey === 'mentors').length,
+        copies: registros.filter((item) => item.tabKey === 'copies').length,
+      };
 
       const headHtml = headers.map((header) => `<th>${esc(header)}</th>`).join('');
       const bodyHtml = registros.map((item) => `
-        <tr class="carteira-row" data-status="${item.bucket}">
+        <tr class="carteira-row" data-status="${item.bucket}" data-tab="${item.tabKey}" ${item.tabKey === 'mentors' ? '' : 'style="display:none"'}>
           ${item.row.map((cell) => `<td>${this.renderCell(cell)}</td>`).join('')}
         </tr>
       `).join('');
@@ -572,22 +584,23 @@ const DASHBOARDS = [
           </div>
 
           <div class="dash-card">
-            <div class="dash-card-header"><h3 class="dash-card-title">Visão Macro da Carteira</h3></div>
-            <div class="dash-card-body" style="padding:16px 20px">
-              <div class="carteira-meta">Fonte: ${esc(sheet.name)} (ID: ${esc(tableData.sheetId)})</div>
-              <div class="carteira-meta">Abas: ${(tableData.tabsLoaded || []).map((tab) => esc(tab)).join(' | ')}</div>
-              <div class="carteira-status-cloud">${statusCloud}</div>
-            </div>
-          </div>
-
-          <div class="dash-card">
             <div class="dash-card-header">
               <h3 class="dash-card-title">Base Completa da Carteira</h3>
-              <div class="carteira-filter-bar">
-                <button class="carteira-filter-btn active" data-f="all" onclick="_filtrarCarteiraStatus('all')">Todos (${totais.total})</button>
-                <button class="carteira-filter-btn" data-f="ativo" onclick="_filtrarCarteiraStatus('ativo')">Ativos (${totais.ativos})</button>
-                <button class="carteira-filter-btn" data-f="inativo" onclick="_filtrarCarteiraStatus('inativo')">Inativos (${totais.inativos})</button>
-                <button class="carteira-filter-btn" data-f="outros" onclick="_filtrarCarteiraStatus('outros')">Outros (${totais.outros})</button>
+              <div class="carteira-controls">
+                <div class="carteira-view-switch">
+                  <button class="carteira-view-btn active" data-tab="mentors" onclick="_filtrarCarteiraTab('mentors')">
+                    Mentors (${tabTotals.mentors})
+                  </button>
+                  <button class="carteira-view-btn" data-tab="copies" onclick="_filtrarCarteiraTab('copies')">
+                    Copies (${tabTotals.copies})
+                  </button>
+                </div>
+                <div class="carteira-filter-bar">
+                  <button class="carteira-filter-btn active" data-f="all" onclick="_filtrarCarteiraStatus('all')">Todos (${totais.total})</button>
+                  <button class="carteira-filter-btn" data-f="ativo" onclick="_filtrarCarteiraStatus('ativo')">Ativos (${totais.ativos})</button>
+                  <button class="carteira-filter-btn" data-f="inativo" onclick="_filtrarCarteiraStatus('inativo')">Inativos (${totais.inativos})</button>
+                  <button class="carteira-filter-btn" data-f="outros" onclick="_filtrarCarteiraStatus('outros')">Outros (${totais.outros})</button>
+                </div>
               </div>
             </div>
             <div class="dash-card-body">
@@ -595,7 +608,8 @@ const DASHBOARDS = [
               <table class="dash-table">
                 <thead><tr>${headHtml}</tr></thead>
                 <tbody>${bodyHtml}</tbody>
-              </table>`}
+              </table>
+              <p class="dash-empty" id="carteiraFilterEmpty" style="display:none">Nenhuma linha encontrada com os filtros atuais.</p>`}
             </div>
           </div>
         </div>`;
@@ -609,22 +623,93 @@ const DASHBOARDS = [
 
 window.DASHBOARDS = DASHBOARDS;
 
-// ── Filtro global da tabela de roteiros ───────────────────────────────────
+// ── Filtros da tabela de roteiros ─────────────────────────────────────────
+window._rotCopyFilter = null; // null = todos os copies
+
+window._applyRotFilters = function() {
+  const statusBtn = document.querySelector('.rot-filter-btn.active');
+  const statusF   = statusBtn ? statusBtn.dataset.f : 'all';
+  const copyF     = window._rotCopyFilter;
+  document.querySelectorAll('.rot-row').forEach(row => {
+    const statusOk = statusF === 'all' || row.dataset.status === statusF;
+    const copyOk   = !copyF  || copyF.includes(row.dataset.copy);
+    row.style.display = (statusOk && copyOk) ? '' : 'none';
+  });
+};
+
 window._filtrarRoteiros = function(filtro) {
   document.querySelectorAll('.rot-filter-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.f === filtro)
   );
-  document.querySelectorAll('.rot-row').forEach(row =>
-    row.style.display = (filtro === 'all' || row.dataset.status === filtro) ? '' : 'none'
-  );
+  window._applyRotFilters();
+};
+
+window._toggleCopyDropdown = function(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('rot-copy-dropdown');
+  if (!dd) return;
+  const opening = !dd.classList.contains('open');
+  dd.classList.toggle('open', opening);
+  if (opening) {
+    setTimeout(() => {
+      document.addEventListener('click', function handler(ev) {
+        if (!document.getElementById('rot-copy-select')?.contains(ev.target)) {
+          dd.classList.remove('open');
+          document.removeEventListener('click', handler);
+        }
+      });
+    }, 0);
+  }
+};
+
+window._selectAllCopies = function(checked) {
+  document.querySelectorAll('.rot-copy-option input').forEach(cb => cb.checked = checked);
+  window._applyCopyFilter();
+};
+
+window._applyCopyFilter = function() {
+  const all     = [...document.querySelectorAll('.rot-copy-option input')];
+  const checked = all.filter(cb => cb.checked).map(cb => cb.value);
+  const summary = document.getElementById('rot-copy-summary');
+  if (summary) {
+    summary.textContent = checked.length === 0     ? 'Nenhum copy' :
+                          checked.length === all.length ? 'Todos os copies' :
+                          `${checked.length} de ${all.length} copies`;
+  }
+  window._rotCopyFilter = checked.length === all.length ? null : checked;
+  window._applyRotFilters();
 };
 
 // ── Filtro global da tabela da carteira ─────────────────────────────────────
+window._aplicarFiltrosCarteira = function(tab, status) {
+  let visibleCount = 0;
+
+  document.querySelectorAll('.carteira-row').forEach((row) => {
+    const tabMatch = row.dataset.tab === tab;
+    const statusMatch = status === 'all' || row.dataset.status === status;
+    const visible = tabMatch && statusMatch;
+    row.style.display = visible ? '' : 'none';
+    if (visible) visibleCount += 1;
+  });
+
+  const emptyState = document.getElementById('carteiraFilterEmpty');
+  if (emptyState) emptyState.style.display = visibleCount ? 'none' : 'block';
+};
+
+window._filtrarCarteiraTab = function(tab) {
+  document.querySelectorAll('.carteira-view-btn').forEach((button) => {
+    button.classList.toggle('active', button.dataset.tab === tab);
+  });
+
+  const status = (document.querySelector('.carteira-filter-btn.active') || {}).dataset?.f || 'all';
+  window._aplicarFiltrosCarteira(tab, status);
+};
+
 window._filtrarCarteiraStatus = function(filtro) {
   document.querySelectorAll('.carteira-filter-btn').forEach((button) => {
     button.classList.toggle('active', button.dataset.f === filtro);
   });
-  document.querySelectorAll('.carteira-row').forEach((row) => {
-    row.style.display = (filtro === 'all' || row.dataset.status === filtro) ? '' : 'none';
-  });
+
+  const activeTab = (document.querySelector('.carteira-view-btn.active') || {}).dataset?.tab || 'mentors';
+  window._aplicarFiltrosCarteira(activeTab, filtro);
 };
