@@ -61,38 +61,63 @@ const DASHBOARDS = [
         'Pedro Barros', 'Lucas Nunes', 'Carol Nascimento', 'Rubens Sampaio',
         'Elaine Emideo', 'Leonardo Bonassi',
       ],
-      // Colunas: COPY=0, CLIENTE=1, PLANO=2, Mentor=3, LEVA ATUAL=4,
-      //          PRAZO ATUAL=5, LEVAS NO TOTAL=6, ROTEIROS POR LEVA=7, STATUS=8, ENTREGAS=9
-      colunas: { cliente: 1, plano: 2, levaAtual: 4, prazo: 5, totalLevas: 6, roteirosPorLeva: 7, status: 8 },
     },
 
     async fetchSheet(sheetId, aba) {
       const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(aba)}`;
       const raw  = await fetch(url).then(r => r.text());
       const json = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
-      const cols = this.config.colunas;
-      return (json.table.rows || [])
-        .filter(row => row.c && row.c[cols.cliente]?.v)
-        .map(row => {
-          const prazoCell = row.c[cols.prazo];
-          let prazo = '';
-          if (prazoCell?.v) {
-            const m = String(prazoCell.v).match(/Date\((\d+),(\d+),(\d+)\)/);
-            prazo = m
-              ? new Date(+m[1], +m[2], +m[3]).toISOString().slice(0, 10)
-              : String(prazoCell.f || prazoCell.v);
-          }
-          return {
-            estrategista: aba.trim(),
-            cliente:         String(row.c[cols.cliente]?.v         ?? ''),
-            plano:           String(row.c[cols.plano]?.v           ?? ''),
-            levaAtual:             row.c[cols.levaAtual]?.v        ?? '',
-            totalLevas:            row.c[cols.totalLevas]?.v       ?? '',
-            roteirosPorLeva:       row.c[cols.roteirosPorLeva]?.v  ?? '',
-            prazo,
-            status: String(row.c[cols.status]?.v ?? 'ATIVO'),
-          };
+      const hdrs = json.table.cols || [];
+
+      // Detecta colunas pelo nome do cabeçalho (cada aba pode ter ordem diferente)
+      function n(s) {
+        return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+      }
+      function col(...patterns) {
+        const i = hdrs.findIndex(c => {
+          const label = n(c.label || c.id || '');
+          return patterns.some(p => label.includes(p));
         });
+        return i >= 0 ? i : -1;
+      }
+
+      const iCliente = col('cliente', 'mentorado', 'aluno');
+      const iPlano   = col('plano', 'plan');
+      const iPrazo   = col('prazo');
+      const iStatus  = col('status');
+      const iLeva    = col('leva atual', 'leva entregue', 'leva');
+      const iTotal   = col('levas no total', 'total de levas');
+
+      function parseDate(cell) {
+        if (!cell?.v) return '';
+        const m = String(cell.v).match(/Date\((\d+),(\d+),(\d+)\)/);
+        if (m) {
+          const year = +m[1];
+          // Ano com menos de 4 dígitos é erro de digitação — ignora prazo
+          if (year < 1000) return '';
+          return new Date(year, +m[2], +m[3]).toISOString().slice(0, 10);
+        }
+        // Fallback: string formatada
+        return cell.f ? String(cell.f) : '';
+      }
+
+      function cellVal(row, idx) {
+        if (idx < 0 || !row.c?.[idx]) return '';
+        const c = row.c[idx];
+        return c.v != null ? String(c.v) : (c.f ? String(c.f) : '');
+      }
+
+      return (json.table.rows || [])
+        .filter(row => row.c && iCliente >= 0 && row.c[iCliente]?.v)
+        .map(row => ({
+          estrategista: aba.trim(),
+          cliente:      cellVal(row, iCliente),
+          plano:        cellVal(row, iPlano),
+          levaAtual:    cellVal(row, iLeva),
+          totalLevas:   iTotal >= 0 ? cellVal(row, iTotal) : '',
+          prazo:        parseDate(row.c?.[iPrazo]),
+          status:       cellVal(row, iStatus) || 'ATIVO',
+        }));
     },
 
     async render() {
@@ -147,7 +172,7 @@ const DASHBOARDS = [
             <td>${esc(e.estrategista)}</td>
             <td>${esc(e.cliente)}</td>
             <td>${esc(e.plano)}</td>
-            <td style="white-space:nowrap">${e.levaAtual !== '' ? `${e.levaAtual}${e.totalLevas !== '' ? `/${e.totalLevas}` : ''}` : '—'}</td>
+            <td style="white-space:nowrap">${e.levaAtual !== '' ? (String(e.levaAtual).includes('/') || !e.totalLevas ? esc(String(e.levaAtual)) : `${esc(String(e.levaAtual))}/${esc(String(e.totalLevas))}`) : '—'}</td>
             <td style="white-space:nowrap">${fmtD(e.prazo)}</td>
             <td><span class="status-badge ${CSS[e._st]}">${LABEL[e._st]}</span></td>
           </tr>`).join('');
