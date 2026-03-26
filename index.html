@@ -90,6 +90,24 @@
           <input type="text" id="inputCategory" placeholder="Ex: Escalas, Financeiro, RH…" maxlength="40" list="categorySuggestions" />
           <datalist id="categorySuggestions"></datalist>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="inputOwner">Responsável</label>
+            <input type="text" id="inputOwner" placeholder="Ex: João Silva" maxlength="60" />
+          </div>
+          <div class="form-group">
+            <label for="inputCadence">Cadência</label>
+            <input type="text" id="inputCadence" placeholder="Ex: Semanal, Mensal…" maxlength="40" list="cadenceSuggestions" />
+            <datalist id="cadenceSuggestions">
+              <option value="Diária">
+              <option value="Semanal">
+              <option value="Quinzenal">
+              <option value="Mensal">
+              <option value="Trimestral">
+              <option value="Sob demanda">
+            </datalist>
+          </div>
+        </div>
         <div class="form-group">
           <label for="inputDesc">Descrição (opcional)</label>
           <textarea id="inputDesc" placeholder="Breve descrição do conteúdo ou propósito…" rows="3" maxlength="200"></textarea>

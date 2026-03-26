@@ -247,6 +247,32 @@ body {
 
 .card-name { font-size: 1rem; font-weight: 700; line-height: 1.35; word-break: break-word; }
 .card-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; flex: 1; word-break: break-word; }
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.card-meta-item svg { flex-shrink: 0; color: var(--text-muted); }
+
+.card-meta-label {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
 .card-date { font-size: 0.72rem; color: var(--text-muted); }
 
 .card-footer {

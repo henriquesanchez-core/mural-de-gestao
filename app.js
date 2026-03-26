@@ -87,6 +87,19 @@ function renderSheets() {
           ${sheet.category ? `<span class="card-category">${esc(sheet.category)}</span>` : ''}
           <div class="card-name">${esc(sheet.name)}</div>
           ${sheet.desc ? `<div class="card-desc">${esc(sheet.desc)}</div>` : ''}
+          ${(sheet.owner || sheet.cadence) ? `
+          <div class="card-meta">
+            ${sheet.owner ? `
+            <div class="card-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              <span class="card-meta-label">Responsável:</span> ${esc(sheet.owner)}
+            </div>` : ''}
+            ${sheet.cadence ? `
+            <div class="card-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+              <span class="card-meta-label">Cadência:</span> ${esc(sheet.cadence)}
+            </div>` : ''}
+          </div>` : ''}
           <div class="card-date">Adicionada em ${date}</div>
         </div>
         <div class="card-footer">
@@ -129,6 +142,8 @@ const editId       = document.getElementById('editId');
 const inputName    = document.getElementById('inputName');
 const inputLink    = document.getElementById('inputLink');
 const inputCat     = document.getElementById('inputCategory');
+const inputOwner   = document.getElementById('inputOwner');
+const inputCadence = document.getElementById('inputCadence');
 const inputDesc    = document.getElementById('inputDesc');
 const errorName    = document.getElementById('errorName');
 const errorLink    = document.getElementById('errorLink');
@@ -150,11 +165,13 @@ function openSheetEdit(id) {
   const s = sheets.find(x => x.id === id);
   if (!s) return;
   modalTitle.textContent = 'Editar Planilha';
-  editId.value    = s.id;
-  inputName.value = s.name;
-  inputLink.value = s.link;
-  inputCat.value  = s.category || '';
-  inputDesc.value = s.desc || '';
+  editId.value        = s.id;
+  inputName.value     = s.name;
+  inputLink.value     = s.link;
+  inputCat.value      = s.category || '';
+  inputOwner.value    = s.owner || '';
+  inputCadence.value  = s.cadence || '';
+  inputDesc.value     = s.desc || '';
   openSheetModal();
 }
 
@@ -185,6 +202,8 @@ sheetForm.addEventListener('submit', e => {
   const name     = inputName.value.trim();
   const link     = inputLink.value.trim();
   const category = inputCat.value.trim();
+  const owner    = inputOwner.value.trim();
+  const cadence  = inputCadence.value.trim();
   const desc     = inputDesc.value.trim();
   let ok = true;
 
@@ -196,10 +215,10 @@ sheetForm.addEventListener('submit', e => {
   const id = editId.value;
   if (id) {
     const s = sheets.find(x => x.id === id);
-    if (s) Object.assign(s, { name, link, category, desc });
+    if (s) Object.assign(s, { name, link, category, owner, cadence, desc });
     showToast('Planilha atualizada!');
   } else {
-    sheets.push({ id: crypto.randomUUID(), name, link, category, desc, createdAt: Date.now() });
+    sheets.push({ id: crypto.randomUUID(), name, link, category, owner, cadence, desc, createdAt: Date.now() });
     showToast('Planilha adicionada!');
   }
   saveSheets(sheets);
