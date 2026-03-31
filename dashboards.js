@@ -162,6 +162,8 @@ const DASHBOARDS = [
 
       const rows = dados
         .sort((a,b) => {
+          const cmp = a.estrategista.localeCompare(b.estrategista, 'pt-BR');
+          if (cmp !== 0) return cmp;
           if (!a.prazo && !b.prazo) return 0;
           if (!a.prazo) return 1;
           if (!b.prazo) return -1;
@@ -217,6 +219,14 @@ const DASHBOARDS = [
             <div class="dash-card-header">
               <h3 class="dash-card-title">Todos os Clientes</h3>
               <div class="rot-toolbar">
+                <div class="rot-view-switch">
+                  <button class="rot-view-btn active" data-view="full" onclick="_toggleRotView('full')">Completa</button>
+                  <button class="rot-view-btn" data-view="compact" onclick="_toggleRotView('compact')">Enxuta</button>
+                </div>
+                <button class="rot-export-btn" onclick="_exportarRoteiros()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Exportar
+                </button>
                 <div class="rot-copy-select" id="rot-copy-select">
                   <button class="rot-copy-trigger" onclick="window._toggleCopyDropdown(event)">
                     <span id="rot-copy-summary">Todos os copies</span>
@@ -243,7 +253,7 @@ const DASHBOARDS = [
             </div>
             <div class="dash-card-body">
               ${!dados.length ? '<p class="dash-empty">Nenhum dado carregado.</p>' : `
-              <table class="dash-table">
+              <table class="dash-table" id="rot-table">
                 <thead>
                   <tr><th>Copy</th><th>Cliente</th><th>Plano</th><th>Leva</th><th>Prazo</th><th>Status</th></tr>
                 </thead>
@@ -737,4 +747,45 @@ window._filtrarCarteiraStatus = function(filtro) {
 
   const activeTab = (document.querySelector('.carteira-view-btn.active') || {}).dataset?.tab || 'mentors';
   window._aplicarFiltrosCarteira(activeTab, filtro);
+};
+
+// ── Toggle de visualização Completa/Enxuta (roteiros) ─────────────────────
+window._toggleRotView = function(mode) {
+  const table = document.getElementById('rot-table');
+  if (table) table.classList.toggle('rot-compact', mode === 'compact');
+  document.querySelectorAll('.rot-view-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === mode)
+  );
+};
+
+// ── Exportar roteiros visíveis para CSV ───────────────────────────────────
+window._exportarRoteiros = function() {
+  const table = document.getElementById('rot-table');
+  if (!table) return;
+
+  const isCompact = table.classList.contains('rot-compact');
+  // Colunas: 0=Copy, 1=Cliente, 2=Plano, 3=Leva, 4=Prazo, 5=Status
+  const visibleCols = isCompact ? [0, 1, 4] : [0, 1, 2, 3, 4, 5];
+
+  const headerCells = table.querySelectorAll('thead th');
+  const headers = visibleCols.map(i => headerCells[i]?.textContent?.trim() || '');
+
+  const rows = [];
+  table.querySelectorAll('.rot-row').forEach(row => {
+    if (row.style.display === 'none') return;
+    const cells = row.querySelectorAll('td');
+    rows.push(visibleCols.map(i => (cells[i]?.textContent?.trim() || '').replace(/"/g, '""')));
+  });
+
+  const csvLines = [headers.join(',')];
+  rows.forEach(r => csvLines.push(r.map(c => `"${c}"`).join(',')));
+  const csv = '\uFEFF' + csvLines.join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'roteiros_export.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 };
