@@ -170,7 +170,7 @@ const DASHBOARDS = [
           return a.prazo > b.prazo ? 1 : -1;
         })
         .map(e => `
-          <tr class="rot-row" data-status="${e._st}" data-copy="${esc(e.estrategista)}">
+          <tr class="rot-row" data-status="${e._st}" data-copy="${esc(e.estrategista)}" data-prazo="${e.prazo || ''}">
             <td>${esc(e.estrategista)}</td>
             <td>${esc(e.cliente)}</td>
             <td>${esc(e.plano)}</td>
@@ -223,6 +223,10 @@ const DASHBOARDS = [
                   <button class="rot-view-btn active" data-view="full" onclick="_toggleRotView('full')">Completa</button>
                   <button class="rot-view-btn" data-view="compact" onclick="_toggleRotView('compact')">Enxuta</button>
                 </div>
+                <button class="rot-sort-btn" id="rot-sort-btn" onclick="_toggleRotSort()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><polyline points="5 12 12 19 19 12"/></svg>
+                  Prazo ↑
+                </button>
                 <button class="rot-export-btn" onclick="_exportarRoteiros()">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Exportar
@@ -747,6 +751,38 @@ window._filtrarCarteiraStatus = function(filtro) {
 
   const activeTab = (document.querySelector('.carteira-view-btn.active') || {}).dataset?.tab || 'mentors';
   window._aplicarFiltrosCarteira(activeTab, filtro);
+};
+
+// ── Ordenação por prazo (crescente/decrescente) ───────────────────────────
+window._rotSortDir = 'asc'; // padrão: crescente
+
+window._toggleRotSort = function() {
+  const table = document.getElementById('rot-table');
+  const btn   = document.getElementById('rot-sort-btn');
+  if (!table) return;
+
+  window._rotSortDir = window._rotSortDir === 'asc' ? 'desc' : 'asc';
+  const dir = window._rotSortDir;
+
+  const tbody = table.querySelector('tbody');
+  const rows  = [...tbody.querySelectorAll('.rot-row')];
+
+  rows.sort((a, b) => {
+    const pa = a.dataset.prazo || '';
+    const pb = b.dataset.prazo || '';
+    if (!pa && !pb) return 0;
+    if (!pa) return 1;
+    if (!pb) return -1;
+    return dir === 'asc' ? (pa > pb ? 1 : -1) : (pa < pb ? 1 : -1);
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+
+  if (btn) {
+    btn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><polyline points="${dir === 'asc' ? '5 12 12 19 19 12' : '19 12 12 5 5 12'}"/></svg>
+      Prazo ${dir === 'asc' ? '↑' : '↓'}`;
+  }
 };
 
 // ── Toggle de visualização Completa/Enxuta (roteiros) ─────────────────────

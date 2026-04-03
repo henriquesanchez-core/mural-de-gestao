@@ -564,6 +564,24 @@ body {
 .rot-view-btn:hover { color: var(--text); }
 .rot-view-btn.active { background: var(--primary); color: #fff; }
 
+/* ── Botão Ordenar ── */
+.rot-sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+  white-space: nowrap;
+}
+.rot-sort-btn:hover { background: var(--surface); color: var(--text); }
+
 /* ── Botão Exportar ── */
 .rot-export-btn {
   display: flex;
