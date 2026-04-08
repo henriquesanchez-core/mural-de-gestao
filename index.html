@@ -3,65 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Gestão</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Painel de Gestao</title>
+  <link rel="stylesheet" href="styles.css?v=20260408_04" />
 </head>
 <body>
 
-  <header class="header">
-    <div class="header-inner">
-      <div class="header-title">
-        <span class="header-icon">📋</span>
-        <div>
-          <h1>Painel de Gestão</h1>
-          <p>Mural do Departamento</p>
+  <!-- ── Tela de Login (visivel ate autenticar) ── -->
+  <div id="auth-screen" class="auth-screen" style="display:none">
+    <div class="auth-card">
+      <div class="auth-header-block">
+        <span class="auth-logo">📋</span>
+        <h1>Painel de Gestao</h1>
+        <p>Faca login para acessar o mural</p>
+      </div>
+      <form id="loginForm" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email" />
         </div>
-      </div>
-      <nav class="tabs-nav">
-        <button class="tab-btn active" data-tab="sheets">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
-          Planilhas de Gestão
-        </button>
-        <button class="tab-btn" data-tab="dashboards">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          Dashboards
-        </button>
-      </nav>
-    </div>
-  </header>
-
-  <!-- ── ABA: Planilhas ── -->
-  <div class="tab-content active" id="tab-sheets">
-    <div class="main">
-
-      <div class="toolbar">
-        <div class="search-wrapper">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input type="text" id="searchInput" class="search-input" placeholder="Buscar planilha..." />
+        <div class="form-group">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" placeholder="Sua senha" autocomplete="current-password" />
         </div>
-        <div class="count-badge" id="countBadge">0 planilhas</div>
-        <button class="btn-primary" id="btnOpenModal">+ Nova Planilha</button>
-      </div>
-
-      <div class="empty-state" id="emptyState">
-        <div class="empty-icon">📂</div>
-        <h2>Nenhuma planilha cadastrada</h2>
-        <p>Clique em <strong>+ Nova Planilha</strong> para começar a organizar seu mural.</p>
-      </div>
-
-      <div class="cards-grid" id="cardsGrid"></div>
+        <span class="field-error" id="loginError"></span>
+        <button type="submit" class="btn-primary auth-submit">Entrar</button>
+      </form>
     </div>
   </div>
 
-  <!-- ── ABA: Dashboards ── -->
-  <div class="tab-content" id="tab-dashboards">
-    <nav class="dash-subnav" id="dashSubnav"></nav>
-    <div class="main">
-      <div id="dashContent"></div>
+  <!-- ── App principal (oculto ate autenticar) ── -->
+  <div id="app-main" style="display:none">
+
+    <header class="header">
+      <div class="header-inner">
+        <div class="header-title">
+          <span class="header-icon">📋</span>
+          <div>
+            <h1>Painel de Gestao</h1>
+            <p>Mural do Departamento</p>
+          </div>
+        </div>
+        <nav class="tabs-nav">
+          <button class="tab-btn active" data-tab="sheets">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+            Planilhas de Gestao
+          </button>
+          <button class="tab-btn" data-tab="dashboards">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboards
+          </button>
+        </nav>
+        <div id="auth-user-info" class="auth-user-info"></div>
+      </div>
+    </header>
+
+    <!-- ── ABA: Planilhas ── -->
+    <div class="tab-content active" id="tab-sheets">
+      <div class="main">
+
+        <div class="toolbar">
+          <div class="search-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="searchInput" class="search-input" placeholder="Buscar planilha..." />
+          </div>
+          <div class="count-badge" id="countBadge">0 planilhas</div>
+          <button class="btn-primary" id="btnOpenModal">+ Nova Planilha</button>
+        </div>
+
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">📂</div>
+          <h2>Nenhuma planilha cadastrada</h2>
+          <p>Clique em <strong>+ Nova Planilha</strong> para comecar a organizar seu mural.</p>
+        </div>
+
+        <div class="cards-grid" id="cardsGrid"></div>
+      </div>
     </div>
-  </div>
+
+    <!-- ── ABA: Dashboards ── -->
+    <div class="tab-content" id="tab-dashboards">
+      <nav class="dash-subnav" id="dashSubnav"></nav>
+      <div class="main">
+        <div id="dashContent"></div>
+      </div>
+    </div>
+
+  </div><!-- /app-main -->
 
   <!-- ── Modal: Planilha ── -->
   <div class="modal-overlay" id="modalOverlay">
@@ -89,14 +118,14 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="inputOwner">Responsável</label>
-            <input type="text" id="inputOwner" placeholder="Ex: João Silva" maxlength="60" />
+            <label for="inputOwner">Responsavel</label>
+            <input type="text" id="inputOwner" placeholder="Ex: Joao Silva" maxlength="60" />
           </div>
           <div class="form-group">
-            <label for="inputCadence">Cadência</label>
+            <label for="inputCadence">Cadencia</label>
             <input type="text" id="inputCadence" placeholder="Ex: Semanal, Mensal…" maxlength="40" list="cadenceSuggestions" />
             <datalist id="cadenceSuggestions">
-              <option value="Diária">
+              <option value="Diaria">
               <option value="Semanal">
               <option value="Quinzenal">
               <option value="Mensal">
@@ -106,8 +135,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="inputDesc">Descrição (opcional)</label>
-          <textarea id="inputDesc" placeholder="Breve descrição do conteúdo ou propósito…" rows="3" maxlength="200"></textarea>
+          <label for="inputDesc">Descricao (opcional)</label>
+          <textarea id="inputDesc" placeholder="Breve descricao do conteudo ou proposito…" rows="3" maxlength="200"></textarea>
         </div>
         <div class="modal-actions">
           <button type="button" class="btn-secondary" id="btnCancel">Cancelar</button>
@@ -127,8 +156,8 @@
       <form id="eventForm" class="modal-body" novalidate>
         <input type="hidden" id="eventEditId" />
         <div class="form-group">
-          <label for="eventTitle">Título <span class="required">*</span></label>
-          <input type="text" id="eventTitle" placeholder="Ex: Reunião de equipe" maxlength="80" />
+          <label for="eventTitle">Titulo <span class="required">*</span></label>
+          <input type="text" id="eventTitle" placeholder="Ex: Reuniao de equipe" maxlength="80" />
           <span class="field-error" id="errorEventTitle"></span>
         </div>
         <div class="form-row">
@@ -151,7 +180,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="eventStart">Início</label>
+            <label for="eventStart">Inicio</label>
             <input type="time" id="eventStart" />
           </div>
           <div class="form-group">
@@ -160,7 +189,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="eventDesc">Descrição (opcional)</label>
+          <label for="eventDesc">Descricao (opcional)</label>
           <textarea id="eventDesc" placeholder="Detalhes do evento…" rows="3" maxlength="300"></textarea>
         </div>
         <div class="modal-actions">
@@ -171,9 +200,23 @@
     </div>
   </div>
 
+  <!-- ── Modal: Gerenciamento de Usuarios ── -->
+  <div class="modal-overlay" id="userMgmtOverlay">
+    <div class="modal" style="max-width:720px">
+      <div class="modal-header">
+        <h2>Gerenciar Usuarios</h2>
+        <button class="btn-close" id="btnCloseUserMgmt">&times;</button>
+      </div>
+      <div class="modal-body" id="userMgmtContent"></div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
-  <script src="app.js?v=20260408"></script>
-  <script src="dashboards.js?v=20260408"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="auth.js"></script>
+  <script src="app.js?v=20260408_04"></script>
+  <script src="dashboards.js?v=20260408_04"></script>
 </body>
 </html>

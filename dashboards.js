@@ -159,6 +159,7 @@ const DASHBOARDS = [
       }
 
       const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
       const em7  = new Date(hoje); em7.setDate(hoje.getDate() + 7);
 
       function calcStatus(item) {
@@ -169,6 +170,7 @@ const DASHBOARDS = [
         const p = new Date(item.prazo + 'T00:00:00');
         if (p < hoje)                               return 'vencido';
         if (p.getTime() === hoje.getTime())         return 'hoje';
+        if (p.getTime() === amanha.getTime())       return 'amanha';
         if (p <= em7)                               return 'proximos7';
         return 'ativo';
       }
@@ -177,6 +179,7 @@ const DASHBOARDS = [
       const total      = dados.length;
       const vencidos   = dados.filter(e => e._st === 'vencido').length;
       const paraHoje   = dados.filter(e => e._st === 'hoje').length;
+      const paraAmanha = dados.filter(e => e._st === 'amanha').length;
       const prox7      = dados.filter(e => e._st === 'proximos7').length;
       const ativos     = dados.filter(e => !['finalizado','pausado'].includes(e._st)).length;
       const pausados   = dados.filter(e => e._st === 'pausado').length;
@@ -186,8 +189,8 @@ const DASHBOARDS = [
 
       const esc  = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       const fmtD = ymd => { if (!ymd) return '—'; const [y,m,d] = ymd.split('-'); return `${d}/${m}/${y}`; };
-      const LABEL = { vencido:'Vencido', hoje:'Hoje', proximos7:'Próx. 7 dias', ativo:'Ativo', pausado:'Pausado', finalizado:'Finalizado' };
-      const CSS   = { vencido:'st-atrasado', hoje:'st-hoje', proximos7:'st-proximos7', ativo:'st-pendente', pausado:'st-pendente', finalizado:'st-entregue' };
+      const LABEL = { vencido:'Vencido', hoje:'Hoje', amanha:'Amanhã', proximos7:'Próx. 7 dias', ativo:'Ativo', pausado:'Pausado', finalizado:'Finalizado' };
+      const CSS   = { vencido:'st-atrasado', hoje:'st-hoje', amanha:'st-amanha', proximos7:'st-proximos7', ativo:'st-pendente', pausado:'st-pendente', finalizado:'st-entregue' };
 
       const rows = dados
         .sort((a,b) => {
@@ -226,6 +229,11 @@ const DASHBOARDS = [
               <div class="dash-kpi-label">Para Hoje</div>
               <div class="dash-kpi-value">${paraHoje}</div>
               <div class="dash-kpi-sub">vencem hoje</div>
+            </div>
+            <div class="dash-kpi kpi-amanha">
+              <div class="dash-kpi-label">Amanhã</div>
+              <div class="dash-kpi-value">${paraAmanha}</div>
+              <div class="dash-kpi-sub">vencem amanhã</div>
             </div>
             <div class="dash-kpi kpi-proximos7">
               <div class="dash-kpi-label">Próx. 7 dias</div>
@@ -277,6 +285,7 @@ const DASHBOARDS = [
                   <button class="rot-filter-btn active" data-f="all"        onclick="_filtrarRoteiros('all')">Todos (${total})</button>
                   <button class="rot-filter-btn"        data-f="vencido"    onclick="_filtrarRoteiros('vencido')">Vencidos (${vencidos})</button>
                   <button class="rot-filter-btn"        data-f="hoje"       onclick="_filtrarRoteiros('hoje')">Hoje (${paraHoje})</button>
+                  <button class="rot-filter-btn"        data-f="amanha"     onclick="_filtrarRoteiros('amanha')">Amanhã (${paraAmanha})</button>
                   <button class="rot-filter-btn"        data-f="proximos7"  onclick="_filtrarRoteiros('proximos7')">Próx. 7 dias (${prox7})</button>
                   <button class="rot-filter-btn"        data-f="ativo"      onclick="_filtrarRoteiros('ativo')">Ativos (${ativos})</button>
                   <button class="rot-filter-btn"        data-f="pausado"    onclick="_filtrarRoteiros('pausado')">Pausados (${pausados})</button>
