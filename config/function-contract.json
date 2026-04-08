@@ -1,0 +1,67 @@
+{
+  "version": "2026-03-26",
+  "sourceFile": "app.js",
+  "requiredFunctions": [
+    { "name": "loadSheets", "arity": 0 },
+    { "name": "saveSheets", "arity": 1 },
+    { "name": "esc", "arity": 1 },
+    { "name": "isValidUrl", "arity": 1 },
+    { "name": "showToast", "arity": 1 },
+    { "name": "initDashboards", "arity": 0 },
+    { "name": "renderDashboard", "arity": 2 },
+    { "name": "renderSheets", "arity": 0 },
+    { "name": "openSheetModal", "arity": 0 },
+    { "name": "closeSheetModal", "arity": 0 },
+    { "name": "openSheetEdit", "arity": 1 },
+    { "name": "deleteSheet", "arity": 1 }
+  ],
+  "dashboardFile": "dashboards.js",
+  "requiredGlobalHandlers": [
+    "openSheetEdit",
+    "deleteSheet"
+  ],
+  "requiredConstants": [
+    { "name": "SHEETS_KEY", "value": "gestao_planilhas_v1" }
+  ],
+  "requiredAppPatterns": [
+    { "id": "name-required-validation", "pattern": "if\\s*\\(!name\\)" },
+    { "id": "link-required-validation", "pattern": "if\\s*\\(!link\\)" },
+    { "id": "link-url-validation", "pattern": "isValidUrl\\(link\\)" },
+    { "id": "save-after-mutation", "pattern": "saveSheets\\(sheets\\)" },
+    { "id": "escape-name", "pattern": "\\$\\{esc\\(sheet\\.name\\)\\}" },
+    { "id": "escape-category", "pattern": "\\$\\{esc\\(sheet\\.category\\)\\}" },
+    { "id": "escape-desc", "pattern": "\\$\\{esc\\(sheet\\.desc\\)\\}" },
+    { "id": "escape-owner", "pattern": "\\$\\{esc\\(sheet\\.owner\\)\\}" },
+    { "id": "escape-cadence", "pattern": "\\$\\{esc\\(sheet\\.cadence\\)\\}" },
+    { "id": "escape-link", "pattern": "href=\"\\$\\{esc\\(sheet\\.link\\)\\}\"" },
+    { "id": "uuid-id-generation", "pattern": "crypto\\.randomUUID\\(\\)" }
+  ],
+  "forbiddenAppPatterns": [
+    {
+      "id": "raw-sheet-interpolation",
+      "pattern": "\\$\\{\\s*sheet\\.(name|category|desc|owner|cadence|link)\\s*\\}"
+    }
+  ],
+  "requiredHtmlPatterns": [
+    { "id": "dashboard-subnav-container", "pattern": "id=\"dashSubnav\"" },
+    { "id": "dashboard-content-container", "pattern": "id=\"dashContent\"" },
+    { "id": "auth-screen-container", "pattern": "id=\"auth-screen\"" },
+    { "id": "app-main-container", "pattern": "id=\"app-main\"" }
+  ],
+  "requiredDashboardPatterns": [
+    { "id": "dashboard-escape-helper", "pattern": "const\\s+e\\s*=\\s*v\\s*=>\\s*String\\(v\\s*\\?\\?\\s*''\\)" },
+    { "id": "dashboard-escape-name", "pattern": "\\$\\{e\\(s\\.name\\)\\}" },
+    { "id": "dashboard-escape-category", "pattern": "\\$\\{e\\(s\\.category\\s*\\|\\|\\s*'\\u2014'\\)\\}" },
+    { "id": "dashboard-escape-owner", "pattern": "\\$\\{e\\(s\\.owner\\s*\\|\\|\\s*'\\u2014'\\)\\}" },
+    { "id": "dashboard-escape-cadence", "pattern": "\\$\\{e\\(s\\.cadence\\s*\\|\\|\\s*'\\u2014'\\)\\}" },
+    { "id": "dashboard-escape-link", "pattern": "href=\"\\$\\{e\\(s\\.link\\)\\}\"" },
+    { "id": "carteira-dashboard-id", "pattern": "id:\\s*'carteira-estrategistas'" },
+    { "id": "carteira-dashboard-filter", "pattern": "window\\._filtrarCarteiraStatus\\s*=\\s*function" }
+  ],
+  "forbiddenDashboardPatterns": [
+    {
+      "id": "dashboard-raw-sheet-interpolation",
+      "pattern": "\\$\\{\\s*s\\.(name|category|owner|cadence|link)\\s*\\}"
+    }
+  ]
+}

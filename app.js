@@ -59,9 +59,13 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 let activeDashId = null;
 
 function getDashboardsRegistry() {
-  if (Array.isArray(window.DASHBOARDS) && window.DASHBOARDS.length) return window.DASHBOARDS;
-  if (typeof DASHBOARDS !== 'undefined' && Array.isArray(DASHBOARDS) && DASHBOARDS.length) return DASHBOARDS;
-  return [];
+  let list = [];
+  if (Array.isArray(window.DASHBOARDS) && window.DASHBOARDS.length) list = window.DASHBOARDS;
+  else if (typeof DASHBOARDS !== 'undefined' && Array.isArray(DASHBOARDS) && DASHBOARDS.length) list = DASHBOARDS;
+  if (typeof window._filterDashboardsByRole === 'function') {
+    list = window._filterDashboardsByRole(list);
+  }
+  return list;
 }
 
 function initDashboards() {
@@ -293,6 +297,10 @@ document.addEventListener('keydown', e => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Init
+// Init — espera autenticacao antes de renderizar
 // ─────────────────────────────────────────────────────────────────────────────
-renderSheets();
+if (window._authReady) {
+  window._authReady.then(function () { renderSheets(); });
+} else {
+  renderSheets();
+}
