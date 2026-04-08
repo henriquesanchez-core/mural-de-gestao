@@ -89,16 +89,45 @@ const DASHBOARDS = [
       const iTotal   = col('levas no total', 'total de levas');
 
       function parseDate(cell) {
-        if (!cell?.v) return '';
-        const m = String(cell.v).match(/Date\((\d+),(\d+),(\d+)\)/);
+        if (!cell) return '';
+
+        let raw = '';
+        if (cell.v !== undefined && cell.v !== null) raw = String(cell.v);
+        else if (cell.f !== undefined && cell.f !== null) raw = String(cell.f);
+        else return '';
+
+        // Tenta pegar formato Google Date(Y,M,D)
+        const m = raw.match(/Date\((\d+),(\d+),(\d+)\)/);
         if (m) {
-          const year = +m[1];
-          // Ano com menos de 4 dígitos é erro de digitação — ignora prazo
-          if (year < 1000) return '';
-          return new Date(year, +m[2], +m[3]).toISOString().slice(0, 10);
+          const y = m[1];
+          // O ano da data preenchida deve ter pelo menos 4 dígitos
+          if (+y < 1000) return '';
+          const mo = String(+m[2] + 1).padStart(2, '0');
+          const d = String(+m[3]).padStart(2, '0');
+          return `${y}-${mo}-${d}`;
         }
-        // Fallback: string formatada
-        return cell.f ? String(cell.f) : '';
+        
+        // Tenta regex modelo DD/MM/YYYY ou DD-MM-YYYY
+        const mBR = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (mBR) {
+          const y = mBR[3];
+          if (+y < 1000) return '';
+          const mo = mBR[2].padStart(2, '0');
+          const d = mBR[1].padStart(2, '0');
+          return `${y}-${mo}-${d}`;
+        }
+        
+        // Tenta regex modelo YYYY-MM-DD
+        const mISO = raw.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+        if (mISO) {
+          const y = mISO[1];
+          if (+y < 1000) return '';
+          const mo = mISO[2].padStart(2, '0');
+          const d = mISO[3].padStart(2, '0');
+          return `${y}-${mo}-${d}`;
+        }
+
+        return '';
       }
 
       function cellVal(row, idx) {
