@@ -4,23 +4,27 @@
 (function () {
   'use strict';
 
+  // ── authReady precisa existir antes de qualquer return ────────────────────
+  let resolveReady;
+  const authReady = new Promise(function (r) { resolveReady = r; });
+  window._authReady = authReady;
+
   const sb = window._supabaseClient;
+
+  // Se Supabase nao esta configurado, mostra o app sem autenticacao
   if (!sb) {
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('auth-screen').innerHTML =
-      '<div class="auth-card"><p style="color:var(--danger);text-align:center">Erro: Supabase nao carregou. Verifique sua conexao e recarregue.</p></div>';
+    var appMain = document.getElementById('app-main');
+    if (appMain) appMain.style.display = '';
+    resolveReady();
     return;
   }
 
   // ── Estado ──────────────────────────────────────────────────────────────────
   let authUser    = null;
   let authProfile = null;
-  let resolveReady;
-  const authReady = new Promise(r => { resolveReady = r; });
 
   window._authUser    = null;
   window._authProfile = null;
-  window._authReady   = authReady;
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   function escAuth(str) {
@@ -389,11 +393,22 @@
     });
   }
 
-  sb.auth.getSession().then(({ data: { session } }) => {
-    if (!session) {
+  // Timeout de seguranca: se auth nao resolver em 4s, mostra login
+  var safetyTimer = setTimeout(function () {
+    showLoginScreen();
+    resolveReady();
+  }, 4000);
+
+  sb.auth.getSession().then(function (res) {
+    clearTimeout(safetyTimer);
+    if (!res.data.session) {
       showLoginScreen();
       resolveReady();
     }
+  }).catch(function () {
+    clearTimeout(safetyTimer);
+    showLoginScreen();
+    resolveReady();
   });
 
 })();
