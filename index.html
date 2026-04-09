@@ -4,30 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Gestao</title>
-  <link rel="stylesheet" href="styles.css?v=20260408_04" />
+  <link rel="stylesheet" href="styles.css?v=20260409" />
 </head>
 <body>
 
-  <!-- ── Tela de Login (visivel ate autenticar) ── -->
+  <!-- ── Tela de Login ── -->
   <div id="auth-screen" class="auth-screen" style="display:none">
     <div class="auth-card">
       <div class="auth-header-block">
         <span class="auth-logo">📋</span>
         <h1>Painel de Gestao</h1>
-        <p>Faca login para acessar o mural</p>
+        <p>Selecione seu cargo para entrar</p>
       </div>
-      <form id="loginForm" class="auth-form" novalidate>
+
+      <div class="auth-roles">
+        <button class="auth-role-card" data-role="lider">
+          <span class="auth-role-icon">👑</span>
+          <span class="auth-role-name">Lider</span>
+        </button>
+        <button class="auth-role-card" data-role="guardiao">
+          <span class="auth-role-icon">🛡️</span>
+          <span class="auth-role-name">Guardiao</span>
+        </button>
+      </div>
+
+      <div id="authPasswordSection" style="display:none">
         <div class="form-group">
-          <label for="loginEmail">Email</label>
-          <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email" />
+          <label id="authPasswordLabel">Senha</label>
+          <input type="password" id="authPassword" placeholder="Digite a senha..." autocomplete="off" />
+          <span class="field-error" id="authError"></span>
         </div>
-        <div class="form-group">
-          <label for="loginPassword">Senha</label>
-          <input type="password" id="loginPassword" placeholder="Sua senha" autocomplete="current-password" />
-        </div>
-        <span class="field-error" id="loginError"></span>
-        <button type="submit" class="btn-primary auth-submit">Entrar</button>
-      </form>
+        <button class="btn-primary auth-submit" id="btnAuthConfirm">Entrar</button>
+      </div>
     </div>
   </div>
 
@@ -200,23 +208,10 @@
     </div>
   </div>
 
-  <!-- ── Modal: Gerenciamento de Usuarios ── -->
-  <div class="modal-overlay" id="userMgmtOverlay">
-    <div class="modal" style="max-width:720px">
-      <div class="modal-header">
-        <h2>Gerenciar Usuarios</h2>
-        <button class="btn-close" id="btnCloseUserMgmt">&times;</button>
-      </div>
-      <div class="modal-body" id="userMgmtContent"></div>
-    </div>
-  </div>
-
   <div class="toast" id="toast"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
   <script src="auth.js"></script>
-  <script src="app.js?v=20260408_04"></script>
-  <script src="dashboards.js?v=20260408_04"></script>
+  <script src="app.js?v=20260409"></script>
+  <script src="dashboards.js?v=20260409"></script>
 </body>
 </html>

@@ -1336,6 +1336,47 @@ input.invalid, textarea.invalid {
   box-shadow: 0 0 0 3px rgba(37,99,235,.12);
 }
 
+/* ── Cards de cargo (Lider / Guardiao) ── */
+.auth-roles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.auth-role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 16px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .1s, box-shadow .15s;
+  font-family: inherit;
+}
+.auth-role-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: var(--shadow-sm);
+}
+.auth-role-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+}
+.auth-role-card:active { transform: scale(.97); }
+
+.auth-role-icon { font-size: 2rem; line-height: 1; }
+
+.auth-role-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
 /* ── Responsivo auth ── */
 @media (max-width: 640px) {
   .auth-user-info { gap: 4px; }

@@ -1,414 +1,170 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// auth.js — Autenticacao e controle de acesso por role (Lider / Guardiao)
+// auth.js — Login por cargo com senha (sem banco de dados)
+// Para trocar as senhas, edite as constantes abaixo.
 // ─────────────────────────────────────────────────────────────────────────────
 (function () {
   'use strict';
 
-  // ── authReady precisa existir antes de qualquer return ────────────────────
-  let resolveReady;
-  const authReady = new Promise(function (r) { resolveReady = r; });
+  // ── Senhas — altere aqui ──────────────────────────────────────────────────
+  var SENHAS = {
+    lider:    'lider123',
+    guardiao: 'guardiao123'
+  };
+
+  // ── authReady ─────────────────────────────────────────────────────────────
+  var resolveReady;
+  var authReady = new Promise(function (r) { resolveReady = r; });
   window._authReady = authReady;
 
-  const sb = window._supabaseClient;
+  var SESSION_KEY = 'painel_role_v1';
 
-  // Se Supabase nao esta configurado, mostra o app sem autenticacao
-  if (!sb) {
-    var appMain = document.getElementById('app-main');
-    if (appMain) appMain.style.display = '';
-    resolveReady();
-    return;
-  }
+  // ── Helpers de role ───────────────────────────────────────────────────────
+  window._isLider    = function () { return window._authProfile && window._authProfile.role === 'lider'; };
+  window._isGuardiao = function () { return window._authProfile && window._authProfile.role === 'guardiao'; };
 
-  // ── Estado ──────────────────────────────────────────────────────────────────
-  let authUser    = null;
-  let authProfile = null;
-
-  window._authUser    = null;
-  window._authProfile = null;
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  function escAuth(str) {
-    return String(str ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  window._isLider    = function () { return authProfile && authProfile.role === 'lider'; };
-  window._isGuardiao = function () { return authProfile && authProfile.role === 'guardiao'; };
-
-  // ── Fetch Profile ──────────────────────────────────────────────────────────
-  async function fetchProfile(userId) {
-    const { data, error } = await sb
-      .from('profiles')
-      .select('id, email, nome, role, created_at')
-      .eq('id', userId)
-      .single();
-    if (error) { console.error('Profile fetch error:', error); return null; }
-    return data;
-  }
-
-  // ── Login ──────────────────────────────────────────────────────────────────
-  async function handleLogin(email, password) {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
-  }
-
-  // ── Logout ─────────────────────────────────────────────────────────────────
-  window._logout = async function () {
-    await sb.auth.signOut();
-    authUser = null;
-    authProfile = null;
-    window._authUser    = null;
+  window._logout = function () {
+    sessionStorage.removeItem(SESSION_KEY);
     window._authProfile = null;
+    document.getElementById('app-main').style.display = 'none';
     showLoginScreen();
   };
 
-  // ── Tela de Login ──────────────────────────────────────────────────────────
+  // ── Filtro de dashboards por role ─────────────────────────────────────────
+  window._filterDashboardsByRole = function (dashboards) {
+    if (!window._authProfile || window._authProfile.role === 'lider') return dashboards;
+    return dashboards.filter(function (d) { return d.id === 'roteiros'; });
+  };
+
+  // ── Mostrar / ocultar telas ───────────────────────────────────────────────
   function showLoginScreen() {
-    document.getElementById('app-main').style.display  = 'none';
     document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-main').style.display    = 'none';
+    resetLoginUI();
   }
 
-  function hideLoginScreen() {
+  function showApp(role) {
+    window._authProfile = { role: role };
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-main').style.display    = '';
+    applyRoleRestrictions();
   }
 
-  // ── Form de Login ──────────────────────────────────────────────────────────
-  function setupLoginForm() {
-    const form    = document.getElementById('loginForm');
-    const errorEl = document.getElementById('loginError');
-    if (!form) return;
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errorEl.textContent = '';
-
-      const email    = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPassword').value;
-
-      if (!email || !password) {
-        errorEl.textContent = 'Preencha email e senha.';
-        return;
-      }
-
-      const btn = form.querySelector('button[type="submit"]');
-      try {
-        btn.disabled    = true;
-        btn.textContent = 'Entrando...';
-        await handleLogin(email, password);
-      } catch (err) {
-        errorEl.textContent = 'Email ou senha incorretos.';
-      } finally {
-        btn.disabled    = false;
-        btn.textContent = 'Entrar';
-      }
-    });
-  }
-
-  // ── Restricoes por Role ────────────────────────────────────────────────────
+  // ── Restricoes de UI por role ─────────────────────────────────────────────
   function applyRoleRestrictions() {
-    if (!authProfile) return;
+    var isLider = window._authProfile && window._authProfile.role === 'lider';
 
-    const isLider = authProfile.role === 'lider';
+    var sheetsBtn = document.querySelector('[data-tab="sheets"]');
+    if (sheetsBtn) sheetsBtn.style.display = isLider ? '' : 'none';
 
-    // Aba Planilhas — so Lider
-    const sheetsTabBtn = document.querySelector('[data-tab="sheets"]');
-    if (sheetsTabBtn) sheetsTabBtn.style.display = isLider ? '' : 'none';
+    var btnNew = document.getElementById('btnOpenModal');
+    if (btnNew) btnNew.style.display = isLider ? '' : 'none';
 
-    // Botao Nova Planilha — so Lider
-    const btnOpen = document.getElementById('btnOpenModal');
-    if (btnOpen) btnOpen.style.display = isLider ? '' : 'none';
-
-    // Guardiao vai direto pro dashboard
     if (!isLider) {
-      const dashBtn = document.querySelector('[data-tab="dashboards"]');
+      var dashBtn = document.querySelector('[data-tab="dashboards"]');
       if (dashBtn) dashBtn.click();
     }
 
-    updateHeaderUserInfo();
+    updateHeaderInfo();
   }
 
-  // ── Header com info do usuario ─────────────────────────────────────────────
-  function updateHeaderUserInfo() {
-    const c = document.getElementById('auth-user-info');
-    if (!c || !authProfile) return;
-
-    const nome  = escAuth(authProfile.nome || authProfile.email);
-    const role  = authProfile.role;
-    const badge = role === 'lider' ? 'Lider' : 'Guardiao';
-
+  function updateHeaderInfo() {
+    var c = document.getElementById('auth-user-info');
+    if (!c || !window._authProfile) return;
+    var role  = window._authProfile.role;
+    var label = role === 'lider' ? 'Lider' : 'Guardiao';
     c.innerHTML =
-      '<span class="auth-user-name">' + nome + '</span>' +
-      '<span class="auth-role-badge badge-' + escAuth(role) + '">' + badge + '</span>' +
-      (role === 'lider'
-        ? '<button class="btn-icon" onclick="_showUserManagement()" title="Gerenciar usuarios">' +
-            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-            '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/>' +
-            '<line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>'
-        : '') +
+      '<span class="auth-role-badge badge-' + role + '">' + label + '</span>' +
       '<button class="btn-icon" onclick="_logout()" title="Sair">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
         '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>' +
         '<polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>';
   }
 
-  // ── Filtro de dashboards por role ──────────────────────────────────────────
-  window._filterDashboardsByRole = function (dashboards) {
-    if (!authProfile || authProfile.role === 'lider') return dashboards;
-    return dashboards.filter(d => d.id === 'roteiros');
-  };
+  // ── UI da tela de login ───────────────────────────────────────────────────
+  var selectedRole = null;
 
-  // ── Gerenciamento de Usuarios (Lider) ──────────────────────────────────────
-
-  window._showUserManagement = async function () {
-    if (!window._isLider()) return;
-
-    const { data: users, error } = await sb
-      .from('profiles')
-      .select('id, email, nome, role, created_at')
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      if (typeof showToast === 'function') showToast('Erro ao carregar usuarios.');
-      return;
-    }
-
-    const overlay = document.getElementById('userMgmtOverlay');
-    const content = document.getElementById('userMgmtContent');
-    if (!overlay || !content) return;
-
-    let html =
-      '<div class="user-mgmt-header">' +
-        '<h3>Gerenciar Usuarios</h3>' +
-        '<button class="btn-primary" onclick="_showCreateUserForm()">+ Novo Usuario</button>' +
-      '</div>' +
-      '<div id="createUserFormContainer"></div>' +
-      '<table class="dash-table"><thead><tr>' +
-        '<th>Nome</th><th>Email</th><th>Cargo</th><th>Criado em</th><th>Acoes</th>' +
-      '</tr></thead><tbody>';
-
-    users.forEach(u => {
-      const isSelf = u.id === authProfile.id;
-      const dateStr = new Date(u.created_at).toLocaleDateString('pt-BR');
-      html +=
-        '<tr>' +
-          '<td>' + escAuth(u.nome || '\u2014') + '</td>' +
-          '<td>' + escAuth(u.email) + '</td>' +
-          '<td><span class="auth-role-badge badge-' + escAuth(u.role) + '">' +
-            (u.role === 'lider' ? 'Lider' : 'Guardiao') + '</span></td>' +
-          '<td>' + dateStr + '</td>' +
-          '<td>' +
-            (isSelf
-              ? '<span class="text-muted">Voce</span>'
-              : '<button class="btn-icon" onclick="_toggleUserRole(\'' + u.id + '\',\'' + u.role + '\')" title="Alternar cargo">' +
-                  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-                  '<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>' +
-                  '<path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>' +
-                '<button class="btn-icon danger" onclick="_deleteUser(\'' + u.id + '\')" title="Excluir">' +
-                  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-                  '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>' +
-                  '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'
-            ) +
-          '</td>' +
-        '</tr>';
-    });
-
-    html += '</tbody></table>';
-    content.innerHTML = html;
-    overlay.classList.add('open');
-  };
-
-  // ── Fechar modal de usuarios ───────────────────────────────────────────────
-  window._closeUserManagement = function () {
-    const overlay = document.getElementById('userMgmtOverlay');
-    if (overlay) overlay.classList.remove('open');
-  };
-
-  // ── Form de criar usuario ──────────────────────────────────────────────────
-  window._showCreateUserForm = function () {
-    const container = document.getElementById('createUserFormContainer');
-    if (!container) return;
-
-    container.innerHTML =
-      '<form id="createUserForm" class="create-user-form" novalidate>' +
-        '<div class="form-row">' +
-          '<div class="form-group">' +
-            '<label>Nome</label>' +
-            '<input type="text" id="newUserNome" placeholder="Nome completo" maxlength="80" />' +
-          '</div>' +
-          '<div class="form-group">' +
-            '<label>Email <span class="required">*</span></label>' +
-            '<input type="email" id="newUserEmail" placeholder="usuario@email.com" />' +
-          '</div>' +
-        '</div>' +
-        '<div class="form-row">' +
-          '<div class="form-group">' +
-            '<label>Senha <span class="required">*</span></label>' +
-            '<input type="password" id="newUserPassword" placeholder="Min. 6 caracteres" />' +
-          '</div>' +
-          '<div class="form-group">' +
-            '<label>Cargo</label>' +
-            '<select id="newUserRole" class="form-select">' +
-              '<option value="guardiao">Guardiao</option>' +
-              '<option value="lider">Lider</option>' +
-            '</select>' +
-          '</div>' +
-        '</div>' +
-        '<span class="field-error" id="createUserError"></span>' +
-        '<div class="modal-actions">' +
-          '<button type="button" class="btn-secondary" onclick="document.getElementById(\'createUserFormContainer\').innerHTML=\'\'">Cancelar</button>' +
-          '<button type="submit" class="btn-primary">Criar Usuario</button>' +
-        '</div>' +
-      '</form>';
-
-    document.getElementById('createUserForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const errorEl  = document.getElementById('createUserError');
-      errorEl.textContent = '';
-
-      const email    = document.getElementById('newUserEmail').value.trim();
-      const password = document.getElementById('newUserPassword').value;
-      const nome     = document.getElementById('newUserNome').value.trim();
-      const role     = document.getElementById('newUserRole').value;
-
-      if (!email || !password) {
-        errorEl.textContent = 'Email e senha sao obrigatorios.';
-        return;
-      }
-      if (password.length < 6) {
-        errorEl.textContent = 'Senha deve ter pelo menos 6 caracteres.';
-        return;
-      }
-
-      try {
-        const { data: { session } } = await sb.auth.getSession();
-        const resp = await fetch(window.SUPABASE_URL + '/functions/v1/create-user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + session.access_token,
-          },
-          body: JSON.stringify({ email, password, nome, role }),
-        });
-
-        const result = await resp.json();
-        if (!resp.ok) throw new Error(result.error || 'Erro ao criar usuario.');
-
-        if (typeof showToast === 'function') showToast('Usuario criado com sucesso!');
-        window._showUserManagement();
-      } catch (err) {
-        errorEl.textContent = err.message;
-      }
-    });
-  };
-
-  // ── Alternar role ──────────────────────────────────────────────────────────
-  window._toggleUserRole = async function (userId, currentRole) {
-    const newRole = currentRole === 'lider' ? 'guardiao' : 'lider';
-    if (!confirm('Alterar cargo para ' + (newRole === 'lider' ? 'Lider' : 'Guardiao') + '?')) return;
-
-    const { error } = await sb
-      .from('profiles')
-      .update({ role: newRole })
-      .eq('id', userId);
-
-    if (error) {
-      if (typeof showToast === 'function') showToast('Erro ao alterar cargo.');
-      return;
-    }
-    if (typeof showToast === 'function') showToast('Cargo atualizado!');
-    window._showUserManagement();
-  };
-
-  // ── Deletar usuario ────────────────────────────────────────────────────────
-  window._deleteUser = async function (userId) {
-    if (!confirm('Deseja excluir este usuario? Esta acao nao pode ser desfeita.')) return;
-
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      const resp = await fetch(window.SUPABASE_URL + '/functions/v1/delete-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + session.access_token,
-        },
-        body: JSON.stringify({ userId }),
-      });
-
-      const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error || 'Erro ao excluir.');
-
-      if (typeof showToast === 'function') showToast('Usuario excluido.');
-      window._showUserManagement();
-    } catch (err) {
-      if (typeof showToast === 'function') showToast('Erro: ' + err.message);
-    }
-  };
-
-  // ── Auth State Change ──────────────────────────────────────────────────────
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (session && session.user) {
-      authUser    = session.user;
-      authProfile = await fetchProfile(session.user.id);
-
-      // Retry se o trigger ainda nao criou o profile
-      if (!authProfile) {
-        await new Promise(r => setTimeout(r, 1200));
-        authProfile = await fetchProfile(session.user.id);
-      }
-
-      window._authUser    = authUser;
-      window._authProfile = authProfile;
-
-      if (!authProfile) {
-        if (typeof showToast === 'function') showToast('Erro ao carregar perfil. Tente novamente.');
-        await sb.auth.signOut();
-        showLoginScreen();
-        resolveReady();
-        return;
-      }
-
-      hideLoginScreen();
-      applyRoleRestrictions();
-    } else {
-      authUser    = null;
-      authProfile = null;
-      window._authUser    = null;
-      window._authProfile = null;
-      showLoginScreen();
-    }
-    resolveReady();
-  });
-
-  // ── Init ───────────────────────────────────────────────────────────────────
-  setupLoginForm();
-
-  const btnCloseUserMgmt = document.getElementById('btnCloseUserMgmt');
-  if (btnCloseUserMgmt) {
-    btnCloseUserMgmt.addEventListener('click', function () {
-      var overlay = document.getElementById('userMgmtOverlay');
-      if (overlay) overlay.classList.remove('open');
-    });
+  function resetLoginUI() {
+    selectedRole = null;
+    var pwSection = document.getElementById('authPasswordSection');
+    var pwInput   = document.getElementById('authPassword');
+    var errEl     = document.getElementById('authError');
+    var cards     = document.querySelectorAll('.auth-role-card');
+    if (pwSection) pwSection.style.display = 'none';
+    if (pwInput)   pwInput.value = '';
+    if (errEl)     errEl.textContent = '';
+    cards.forEach(function (c) { c.classList.remove('selected'); });
   }
 
-  // Timeout de seguranca: se auth nao resolver em 4s, mostra login
-  var safetyTimer = setTimeout(function () {
-    showLoginScreen();
-    resolveReady();
-  }, 4000);
+  function selectRole(role) {
+    selectedRole = role;
 
-  sb.auth.getSession().then(function (res) {
-    clearTimeout(safetyTimer);
-    if (!res.data.session) {
-      showLoginScreen();
-      resolveReady();
+    document.querySelectorAll('.auth-role-card').forEach(function (c) {
+      c.classList.toggle('selected', c.dataset.role === role);
+    });
+
+    var label = document.getElementById('authPasswordLabel');
+    if (label) label.textContent = 'Senha para ' + (role === 'lider' ? 'Lider' : 'Guardiao');
+
+    var errEl = document.getElementById('authError');
+    if (errEl) errEl.textContent = '';
+
+    var pw = document.getElementById('authPassword');
+    if (pw) pw.value = '';
+
+    var section = document.getElementById('authPasswordSection');
+    if (section) {
+      section.style.display = '';
+      if (pw) pw.focus();
     }
-  }).catch(function () {
-    clearTimeout(safetyTimer);
+  }
+
+  function confirmLogin() {
+    if (!selectedRole) return;
+    var pw    = document.getElementById('authPassword');
+    var errEl = document.getElementById('authError');
+    var input = pw ? pw.value : '';
+
+    if (!input) {
+      if (errEl) errEl.textContent = 'Digite a senha.';
+      return;
+    }
+
+    if (input !== SENHAS[selectedRole]) {
+      if (errEl) errEl.textContent = 'Senha incorreta.';
+      if (pw) { pw.value = ''; pw.focus(); }
+      return;
+    }
+
+    sessionStorage.setItem(SESSION_KEY, selectedRole);
+    showApp(selectedRole);
+    resolveReady();
+  }
+
+  // ── Event Listeners ───────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.auth-role-card').forEach(function (card) {
+      card.addEventListener('click', function () { selectRole(card.dataset.role); });
+    });
+
+    var btnConfirm = document.getElementById('btnAuthConfirm');
+    if (btnConfirm) btnConfirm.addEventListener('click', confirmLogin);
+
+    var pw = document.getElementById('authPassword');
+    if (pw) {
+      pw.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') confirmLogin();
+      });
+    }
+  });
+
+  // ── Init: verifica sessao salva ───────────────────────────────────────────
+  var saved = sessionStorage.getItem(SESSION_KEY);
+  if (saved && SENHAS[saved]) {
+    showApp(saved);
+    resolveReady();
+  } else {
     showLoginScreen();
     resolveReady();
-  });
+  }
 
 })();
